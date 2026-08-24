@@ -169,33 +169,33 @@ export const SearchResultsPage: React.FC = () => {
                     <span>Destaque: Melhor Escolha Para Você</span>
                   </div>
 
-                  <div className="bg-white border-2 border-emerald-500 rounded-2xl p-5 sm:p-6 shadow-md relative overflow-hidden">
-                    <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[10px] font-black uppercase tracking-wider px-3.5 py-1 rounded-bl-xl shadow-xs">
+                  <div className="bg-white border-2 border-emerald-500 rounded-2xl p-4 sm:p-6 shadow-md relative overflow-hidden">
+                    <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-bl-xl shadow-xs">
                       MELHOR OPÇÃO
                     </div>
 
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-2 sm:pt-0">
                       
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-start sm:items-center gap-3 sm:gap-4 w-full min-w-0 flex-1">
                         <img 
                           src={bestOfferItem.product.image} 
                           alt={bestOfferItem.product.name} 
-                          className="w-20 h-20 object-contain rounded-xl bg-slate-50 p-2 border border-slate-100 flex-shrink-0"
+                          className="w-16 h-16 sm:w-20 sm:h-20 object-contain rounded-xl bg-slate-50 p-2 border border-slate-100 flex-shrink-0"
                         />
-                        <div className="space-y-1">
-                          <span className="text-xs font-bold uppercase text-blue-600 tracking-wider">
+                        <div className="space-y-1 min-w-0 flex-1 pr-14 sm:pr-0">
+                          <span className="text-[11px] sm:text-xs font-bold uppercase text-blue-600 tracking-wider block truncate">
                             {bestOfferItem.offer.store.name}
                           </span>
                           <h3 
                             onClick={() => navigate('product', bestOfferItem.product.id)}
-                            className="text-base font-bold text-slate-900 line-clamp-1 hover:text-blue-600 cursor-pointer"
+                            className="text-sm sm:text-base font-bold text-slate-900 line-clamp-2 hover:text-blue-600 cursor-pointer break-words"
                           >
                             {bestOfferItem.product.name}
                           </h3>
-                          <div className="text-xs text-slate-500 flex items-center gap-2">
-                            <span>Preço loja: <strong>{formatCurrency(bestOfferItem.offer.currentPrice)}</strong></span>
+                          <div className="text-xs text-slate-500 flex flex-wrap items-center gap-1.5 sm:gap-2 pt-0.5">
+                            <span className="whitespace-nowrap">Preço loja: <strong>{formatCurrency(bestOfferItem.offer.currentPrice)}</strong></span>
                             {bestOfferItem.breakdown.cashbackAmount > 0 && (
-                              <span className="text-emerald-700 bg-emerald-50 font-bold px-2 py-0.5 rounded text-[11px]">
+                              <span className="text-emerald-700 bg-emerald-50 font-bold px-2 py-0.5 rounded text-[11px] whitespace-nowrap inline-flex items-center">
                                 -{formatCurrency(bestOfferItem.breakdown.cashbackAmount)} ({bestOfferItem.offer.cashbackRate}% CB)
                               </span>
                             )}
@@ -208,15 +208,15 @@ export const SearchResultsPage: React.FC = () => {
                           <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider block">
                             Custo Efetivo
                           </span>
-                          <div className="text-2xl font-black text-slate-900 tracking-tight">
+                          <div className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
                             {formatCurrency(bestOfferItem.breakdown.totalEffectiveCost)}
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-shrink-0">
                           <button
                             onClick={() => openCalculationModal(bestOfferItem.offer)}
-                            className="text-xs text-slate-400 hover:text-blue-600 p-2"
+                            className="text-xs text-slate-400 hover:text-blue-600 p-2 cursor-pointer"
                             title="Ver cálculo transparente"
                           >
                             <HelpCircle className="w-4 h-4" />
@@ -225,7 +225,7 @@ export const SearchResultsPage: React.FC = () => {
                             href={bestOfferItem.offer.affiliateUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-md shadow-blue-200 flex items-center gap-1.5"
+                            className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl shadow-md shadow-blue-200 flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
                           >
                             <span>Ir para Loja</span>
                             <ExternalLink className="w-3.5 h-3.5" />
@@ -251,31 +251,31 @@ export const SearchResultsPage: React.FC = () => {
                         key={offer.id}
                         className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 hover:border-slate-300 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm"
                       >
-                        <div className="flex items-center gap-3.5 flex-1">
+                        <div className="flex items-start sm:items-center gap-3 sm:gap-3.5 w-full min-w-0 flex-1">
                           <img 
                             src={product.image} 
                             alt={product.name} 
-                            className="w-14 h-14 object-contain rounded-xl bg-slate-50 p-1.5 border border-slate-100 flex-shrink-0"
+                            className="w-12 h-12 sm:w-14 sm:h-14 object-contain rounded-xl bg-slate-50 p-1.5 border border-slate-100 flex-shrink-0"
                           />
-                          <div className="space-y-0.5 min-w-0">
-                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                          <div className="space-y-0.5 min-w-0 flex-1">
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block truncate">
                               {offer.store.name}
                             </span>
                             <h4 
                               onClick={() => navigate('product', product.id)}
-                              className="text-sm font-bold text-slate-900 truncate hover:text-blue-600 cursor-pointer"
+                              className="text-xs sm:text-sm font-bold text-slate-900 line-clamp-2 hover:text-blue-600 cursor-pointer break-words"
                             >
                               {product.name}
                             </h4>
-                            <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 pt-0.5">
-                              <span>Loja: {formatCurrency(offer.currentPrice)}</span>
+                            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs text-slate-500 pt-1">
+                              <span className="whitespace-nowrap">Loja: {formatCurrency(offer.currentPrice)}</span>
                               {breakdown.cashbackAmount > 0 && (
-                                <span className="text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded text-[11px]">
+                                <span className="text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded text-[11px] whitespace-nowrap inline-flex items-center">
                                   -{formatCurrency(breakdown.cashbackAmount)} ({offer.cashbackRate}% CB)
                                 </span>
                               )}
                               {breakdown.pointsEarned > 0 && (
-                                <span className="text-blue-700 font-bold bg-blue-50 px-1.5 py-0.5 rounded text-[11px]">
+                                <span className="text-blue-700 font-bold bg-blue-50 px-1.5 py-0.5 rounded text-[11px] whitespace-nowrap inline-flex items-center">
                                   +{breakdown.pointsEarned.toLocaleString('pt-BR')} pts
                                 </span>
                               )}
@@ -288,15 +288,15 @@ export const SearchResultsPage: React.FC = () => {
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                               Custo Efetivo
                             </span>
-                            <div className="text-xl font-black text-slate-900">
+                            <div className="text-lg sm:text-xl font-black text-slate-900">
                               {formatCurrency(breakdown.totalEffectiveCost)}
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-shrink-0">
                             <button
                               onClick={() => openCalculationModal(offer)}
-                              className="text-xs text-slate-400 hover:text-blue-600 p-2"
+                              className="text-xs text-slate-400 hover:text-blue-600 p-2 cursor-pointer"
                               title="Ver cálculo"
                             >
                               <HelpCircle className="w-4 h-4" />
@@ -305,7 +305,7 @@ export const SearchResultsPage: React.FC = () => {
                               href={offer.affiliateUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-sm flex items-center gap-1.5"
+                              className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-3.5 sm:px-4 py-2 rounded-xl shadow-sm flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
                             >
                               <span>Ver</span>
                               <ExternalLink className="w-3.5 h-3.5" />

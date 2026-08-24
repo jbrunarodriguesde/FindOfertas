@@ -137,39 +137,39 @@ export const HomePage: React.FC = () => {
             </div>
 
             {/* Box 2: Custo Efetivo Real (Matching mockup) */}
-            <div className="bg-white border-2 border-emerald-500 rounded-2xl p-5 w-full md:w-80 shadow-md relative overflow-hidden">
+            <div className="bg-white border-2 border-emerald-500 rounded-2xl p-5 w-full max-w-sm md:w-80 shadow-md relative overflow-hidden">
               <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[10px] font-black uppercase px-3 py-1 rounded-bl-xl shadow-xs">
                 MÁX. ECONOMIA
               </div>
 
-              <div className="space-y-1 mt-1">
+              <div className="space-y-1 mt-1 pr-16 sm:pr-0">
                 <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider block">
                   Custo Efetivo
                 </span>
-                <div className="text-3xl font-black text-slate-900 tracking-tight">
+                <div className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                   R$ 938,00
                 </div>
               </div>
 
               {/* Deductions Breakdown */}
               <div className="mt-4 pt-3 border-t border-slate-100 space-y-1.5 text-xs">
-                <div className="flex justify-between text-slate-600">
-                  <span>Cashback (2%)</span>
-                  <span className="font-bold text-emerald-600">-R$ 20,00</span>
+                <div className="flex justify-between items-center text-slate-600 gap-2">
+                  <span className="truncate">Cashback (2%)</span>
+                  <span className="font-bold text-emerald-600 whitespace-nowrap flex-shrink-0">-R$ 20,00</span>
                 </div>
-                <div className="flex justify-between text-slate-600">
-                  <span>Pontos (500 pts)</span>
-                  <span className="font-bold text-blue-600">-R$ 12,00</span>
+                <div className="flex justify-between items-center text-slate-600 gap-2">
+                  <span className="truncate">Pontos (500 pts)</span>
+                  <span className="font-bold text-blue-600 whitespace-nowrap flex-shrink-0">-R$ 12,00</span>
                 </div>
-                <div className="flex justify-between text-slate-600">
-                  <span>Desconto Pix</span>
-                  <span className="font-bold text-emerald-600">-R$ 30,00</span>
+                <div className="flex justify-between items-center text-slate-600 gap-2">
+                  <span className="truncate">Desconto Pix</span>
+                  <span className="font-bold text-emerald-600 whitespace-nowrap flex-shrink-0">-R$ 30,00</span>
                 </div>
               </div>
 
               <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-emerald-700 font-bold">
                 <span>Economia total:</span>
-                <span className="font-black">R$ 62,00 (6.2%)</span>
+                <span className="font-black whitespace-nowrap">R$ 62,00 (6.2%)</span>
               </div>
             </div>
 

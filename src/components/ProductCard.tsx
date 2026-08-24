@@ -143,24 +143,24 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         </div>
 
         {/* 4-Metric Grid Breakdown (matching Professional Polish layout) */}
-        <div className="grid grid-cols-4 gap-2 mt-auto border-t border-slate-100 pt-3 text-center">
-          <div>
-            <div className="text-[10px] text-slate-400 font-bold uppercase">Frete</div>
-            <div className="text-xs font-bold text-emerald-600 truncate">
+        <div className="grid grid-cols-4 gap-1 sm:gap-2 mt-auto border-t border-slate-100 pt-3 text-center">
+          <div className="min-w-0">
+            <div className="text-[9px] sm:text-[10px] text-slate-400 font-bold uppercase truncate">Frete</div>
+            <div className="text-[11px] sm:text-xs font-bold text-emerald-600 truncate text-center">
               {bestOffer.isFreeShipping ? 'Grátis' : formatCurrency(bestOffer.shippingPrice)}
             </div>
           </div>
 
-          <div className="border-l border-slate-100">
-            <div className="text-[10px] text-slate-400 font-bold uppercase">Cashback</div>
-            <div className="text-xs font-bold text-blue-600 truncate">
+          <div className="border-l border-slate-100 min-w-0 pl-0.5 sm:pl-1">
+            <div className="text-[9px] sm:text-[10px] text-slate-400 font-bold uppercase truncate">Cashback</div>
+            <div className="text-[11px] sm:text-xs font-bold text-blue-600 truncate text-center">
               {effective.cashbackAmount > 0 ? formatCurrency(effective.cashbackAmount) : 'R$ 0,00'}
             </div>
           </div>
 
-          <div className="border-l border-slate-100">
-            <div className="text-[10px] text-slate-400 font-bold uppercase">Pontos</div>
-            <div className="text-xs font-bold text-slate-600 truncate">
+          <div className="border-l border-slate-100 min-w-0 pl-0.5 sm:pl-1">
+            <div className="text-[9px] sm:text-[10px] text-slate-400 font-bold uppercase truncate">Pontos</div>
+            <div className="text-[11px] sm:text-xs font-bold text-slate-600 truncate text-center">
               {effective.pointsEarned > 0 ? `+${effective.pointsEarned} pt` : '0 pt'}
             </div>
           </div>
@@ -170,11 +170,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               e.stopPropagation();
               openCalculationModal(bestOffer);
             }}
-            className="bg-emerald-50 rounded-lg py-1 px-1.5 cursor-pointer hover:bg-emerald-100 transition-colors"
+            className="bg-emerald-50 rounded-lg py-1 px-1 cursor-pointer hover:bg-emerald-100 transition-colors text-center min-w-0"
             title="Ver demonstrativo de cálculo"
           >
-            <div className="text-[9px] text-emerald-700 font-bold uppercase truncate">Custo Efetivo</div>
-            <div className="text-xs font-black text-emerald-800 truncate">
+            <div className="text-[8px] sm:text-[9px] text-emerald-700 font-bold uppercase truncate text-center">Custo Efetivo</div>
+            <div className="text-[11px] sm:text-xs font-black text-emerald-800 truncate text-center leading-tight">
               {formatCurrency(effective.totalEffectiveCost)}
             </div>
           </div>
