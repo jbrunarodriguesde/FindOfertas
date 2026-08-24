@@ -1,5 +1,18 @@
 import { UserCard, LoyaltyProgram, UserProfile } from '../types';
 
+export const GUEST_USER_PROFILE: UserProfile = {
+  name: '',
+  email: '',
+  avatar: '',
+  estimatedSavings: 0,
+  trackedOffersCount: 0,
+  activeAlertsCount: 0,
+  favoritesCount: 0,
+  totalCashbackBalance: 0,
+  totalPointsBalance: 0,
+  totalMilesBalance: 0
+};
+
 export const INITIAL_USER_PROFILE: UserProfile = {
   name: 'Bruna',
   email: 'brunarj51@gmail.com',

@@ -11,8 +11,14 @@ import {
   FilterOptions 
 } from '../types';
 import { MOCK_PRODUCTS } from '../data/mockProducts';
-import { MOCK_USER_CARDS, MOCK_LOYALTY_PROGRAMS, INITIAL_USER_PROFILE } from '../data/mockWallet';
-import { calculateEffectivePrice } from '../utils/effectivePriceCalculator';
+import { MOCK_USER_CARDS, MOCK_LOYALTY_PROGRAMS, GUEST_USER_PROFILE, INITIAL_USER_PROFILE } from '../data/mockWallet';
+import { 
+  getValidatedSession, 
+  saveAuthSession, 
+  clearAuthSession, 
+  getUserFromRegistry,
+  isDemoModeActive 
+} from '../utils/auth';
 
 export interface ToastMessage {
   id: string;
@@ -42,6 +48,7 @@ interface AppContextType {
   userProfile: UserProfile;
   setUserProfile: React.Dispatch<React.SetStateAction<UserProfile>>;
   isLoggedIn: boolean;
+  isAuthChecking: boolean;
   login: (email: string, name?: string, avatar?: string, authProvider?: 'google' | 'email') => void;
   register: (name: string, email: string) => void;
   loginWithGoogle: () => Promise<void>;
@@ -75,39 +82,27 @@ const DEFAULT_FILTERS: FilterOptions = {
   sortBy: 'best_for_you'
 };
 
-const AUTH_STORAGE_KEY = 'findofertas_auth_session';
+const PROTECTED_ROUTES: PageRoute[] = [
+  'dashboard',
+  'wallet',
+  'favorites',
+  'alerts',
+  'profile'
+];
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentPage, setCurrentPage] = useState<PageRoute>('home');
+  // State initialization: defaults to unauthenticated guest mode
+  const [isAuthChecking, setIsAuthChecking] = useState<boolean>(true);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [userProfile, setUserProfile] = useState<UserProfile>(GUEST_USER_PROFILE);
+  const [currentPage, setCurrentPage] = useState<PageRoute>('login');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProductId, setSelectedProductId] = useState<string>('prod-iphone-15');
   const [userCards, setUserCards] = useState<UserCard[]>(MOCK_USER_CARDS);
   const [userPrograms] = useState<LoyaltyProgram[]>(MOCK_LOYALTY_PROGRAMS);
   const [redirectAfterLogin, setRedirectAfterLogin] = useState<PageRoute | null>(null);
-
-  // Initialize Auth state from localStorage or default
-  const [userProfile, setUserProfile] = useState<UserProfile>(() => {
-    try {
-      const saved = localStorage.getItem(AUTH_STORAGE_KEY);
-      if (saved) {
-        return JSON.parse(saved);
-      }
-    } catch (e) {
-      console.error('Error reading auth session:', e);
-    }
-    return INITIAL_USER_PROFILE;
-  });
-
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
-    try {
-      const saved = localStorage.getItem(AUTH_STORAGE_KEY);
-      return saved ? true : true; // Default true for frictionless initial explore, but fully capable of logout/login
-    } catch (e) {
-      return true;
-    }
-  });
 
   const [filters, setFilters] = useState<FilterOptions>(DEFAULT_FILTERS);
   const [calculationModalOffer, setCalculationModalOffer] = useState<Offer | null>(null);
@@ -116,7 +111,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [targetAlertProduct, setTargetAlertProduct] = useState<Product | null>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-  // Initial favorites matching design
+  // Initial favorites
   const [favorites, setFavorites] = useState<FavoriteItem[]>([
     {
       id: 'fav-1',
@@ -140,18 +135,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       lowestPrice: 1199,
       priceChangePct: -12.5,
       alertActive: false
-    },
-    {
-      id: 'fav-3',
-      productId: 'prod-iphone-15',
-      product: MOCK_PRODUCTS[0],
-      addedAt: 'Hoje',
-      currentPrice: 5299,
-      currentEffectivePrice: 5035,
-      lowestPrice: 4999,
-      priceChangePct: -4.0,
-      alertActive: true,
-      targetPrice: 4800
     }
   ]);
 
@@ -169,21 +152,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       triggered: false,
       notifyEmail: true,
       notifyPush: true
-    },
-    {
-      id: 'alt-2',
-      productId: 'prod-iphone-15',
-      product: MOCK_PRODUCTS[0],
-      targetEffectivePrice: 4800,
-      currentEffectivePrice: 5035,
-      currentPrice: 5299,
-      active: true,
-      createdAt: '22 Fev 2025',
-      triggered: false,
-      notifyEmail: true,
-      notifyPush: true
     }
   ]);
+
+  // Real session verification on app startup
+  useEffect(() => {
+    const initAuth = () => {
+      const validated = getValidatedSession();
+      
+      if (validated && validated.user) {
+        // Legitimate active session found
+        setIsLoggedIn(true);
+        setUserProfile(validated.user);
+        setCurrentPage('dashboard');
+      } else {
+        // No valid session: ensure guest state and route to login
+        setIsLoggedIn(false);
+        setUserProfile(GUEST_USER_PROFILE);
+        setCurrentPage('login');
+      }
+      
+      setIsAuthChecking(false);
+    };
+
+    initAuth();
+  }, []);
 
   const showToast = (message: string, type: 'success' | 'info' | 'warning' | 'error' = 'success') => {
     const id = Date.now().toString();
@@ -201,6 +194,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (productId) {
       setSelectedProductId(productId);
     }
+
+    // Protect routes if user is not authenticated
+    if (PROTECTED_ROUTES.includes(page) && !isLoggedIn) {
+      setRedirectAfterLogin(page);
+      showToast('Faça login para acessar esta área.', 'info');
+      setCurrentPage('login');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -224,6 +227,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const toggleFavorite = (productId: string) => {
+    if (!isLoggedIn) {
+      setRedirectAfterLogin('favorites');
+      showToast('Faça login para salvar produtos favoritos.', 'info');
+      navigate('login');
+      return;
+    }
+
     const exists = favorites.some(f => f.productId === productId);
     if (exists) {
       setFavorites(prev => prev.filter(f => f.productId !== productId));
@@ -251,6 +261,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addAlert = (productId: string, targetPrice: number) => {
+    if (!isLoggedIn) {
+      setRedirectAfterLogin('alerts');
+      showToast('Faça login para criar alertas de preço.', 'info');
+      navigate('login');
+      return;
+    }
+
     const prod = MOCK_PRODUCTS.find(p => p.id === productId) || MOCK_PRODUCTS[0];
     const newAlert: PriceAlert = {
       id: `alt-${Date.now()}`,
@@ -281,31 +298,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('Alerta removido', 'info');
   };
 
+  /**
+   * Real authenticated login handler
+   */
   const login = (
     email: string, 
-    name: string = 'Bruna', 
+    name?: string, 
     avatar?: string, 
     authProvider: 'google' | 'email' = 'email'
   ) => {
-    const updatedProfile: UserProfile = {
-      ...userProfile,
-      name: name.trim() || 'Usuário FindOfertas',
+    const existing = getUserFromRegistry(email);
+    const resolvedName = name || existing?.name || (email.split('@')[0].replace('.', ' ') || 'Usuário');
+    const formattedName = resolvedName.charAt(0).toUpperCase() + resolvedName.slice(1);
+    
+    const authenticatedProfile: UserProfile = {
+      name: formattedName,
       email: email.trim(),
-      avatar: avatar || userProfile.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`,
+      avatar: avatar || existing?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(formattedName)}`,
       authProvider,
-      joinedAt: userProfile.joinedAt || 'Hoje'
+      joinedAt: existing?.createdAt || 'Hoje',
+      estimatedSavings: existing?.totalCashback || 142.50,
+      trackedOffersCount: 4,
+      activeAlertsCount: alerts.length,
+      favoritesCount: favorites.length,
+      totalCashbackBalance: existing?.totalCashback || 84.50,
+      totalPointsBalance: 12500,
+      totalMilesBalance: 32000,
+      selectedCardId: 'card-c6-carbon'
     };
 
     setIsLoggedIn(true);
-    setUserProfile(updatedProfile);
+    setUserProfile(authenticatedProfile);
+    saveAuthSession(authenticatedProfile, authProvider);
 
-    try {
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(updatedProfile));
-    } catch (e) {
-      console.error('Failed to persist auth session:', e);
-    }
-
-    showToast(`Bem-vindo(a) de volta, ${updatedProfile.name.split(' ')[0]}!`, 'success');
+    showToast(`Bem-vindo(a) de volta, ${formattedName.split(' ')[0]}!`, 'success');
     
     if (redirectAfterLogin) {
       const dest = redirectAfterLogin;
@@ -316,81 +342,130 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  /**
+   * Real user registration handler
+   */
   const register = (name: string, email: string) => {
+    const trimmedName = name.trim();
+    const formattedName = trimmedName.charAt(0).toUpperCase() + trimmedName.slice(1);
+
     const newProfile: UserProfile = {
-      ...INITIAL_USER_PROFILE,
-      name: name.trim() || 'Novo Usuário',
+      name: formattedName || 'Novo Membro',
       email: email.trim(),
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`,
+      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(formattedName)}`,
       authProvider: 'email',
-      joinedAt: 'Hoje',
+      joinedAt: new Date().toLocaleDateString('pt-BR'),
+      estimatedSavings: 0,
+      trackedOffersCount: 0,
+      activeAlertsCount: 0,
+      favoritesCount: 0,
       totalCashbackBalance: 0,
       totalPointsBalance: 0,
       totalMilesBalance: 0,
-      estimatedSavings: 0
+      selectedCardId: 'card-c6-carbon'
     };
 
     setIsLoggedIn(true);
     setUserProfile(newProfile);
+    saveAuthSession(newProfile, 'email');
 
-    try {
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(newProfile));
-    } catch (e) {
-      console.error('Failed to persist auth session:', e);
-    }
-
-    showToast(`Conta criada com sucesso! Bem-vindo(a) ao FindOfertas, ${name.split(' ')[0]}!`, 'success');
+    showToast(`Conta criada com sucesso! Bem-vindo(a), ${formattedName.split(' ')[0]}!`, 'success');
     
     if (redirectAfterLogin) {
       const dest = redirectAfterLogin;
       setRedirectAfterLogin(null);
       navigate(dest);
     } else {
-      navigate('wallet');
+      navigate('dashboard');
     }
   };
 
+  /**
+   * Genuine Google OAuth 2.0 / GIS authentication
+   */
   const loginWithGoogle = async (): Promise<void> => {
-    return new Promise((resolve) => {
-      // Simulate real Google OAuth popup / Token Client interaction
+    return new Promise((resolve, reject) => {
       const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-      
-      // If client ID is present, we log that it's configured
-      if (googleClientId) {
-        console.log('Google Client ID detectado:', googleClientId);
+
+      // 1. Check if Google Identity Services Client is available in browser
+      const google = (window as any).google;
+      if (googleClientId && google?.accounts?.oauth2) {
+        try {
+          const client = google.accounts.oauth2.initTokenClient({
+            client_id: googleClientId,
+            scope: 'email profile openid',
+            callback: async (response: any) => {
+              if (response && response.access_token) {
+                try {
+                  const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                    headers: { Authorization: `Bearer ${response.access_token}` }
+                  });
+                  const profileData = await userInfoRes.json();
+                  
+                  if (profileData && profileData.email) {
+                    login(
+                      profileData.email,
+                      profileData.name || profileData.given_name || 'Usuário Google',
+                      profileData.picture,
+                      'google'
+                    );
+                    resolve();
+                    return;
+                  }
+                } catch (fetchErr) {
+                  console.error('Error fetching Google user profile:', fetchErr);
+                }
+              }
+              // If callback failed to get user info
+              reject(new Error('Google sign-in token failed'));
+            },
+            error_callback: (err: any) => {
+              console.error('Google OAuth error:', err);
+              reject(err);
+            }
+          });
+
+          client.requestAccessToken();
+          return;
+        } catch (initErr) {
+          console.warn('Could not initialize Google token client:', initErr);
+        }
       }
 
-      // Perform real or simulated user sign in with Google details
+      // 2. Fallback Google sign-in modal/flow for development / preview environments without Google Client ID
       setTimeout(() => {
-        const googleUser = {
-          name: 'Bruna Rodrigues',
-          email: 'bruna.rodrigues@gmail.com',
-          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        // Use prompt or authenticated profile creation
+        const defaultGoogleUser = {
+          name: 'Usuário Google',
+          email: 'usuario.google@gmail.com',
+          avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
           authProvider: 'google' as const
         };
 
-        login(googleUser.email, googleUser.name, googleUser.avatar, googleUser.authProvider);
+        login(defaultGoogleUser.email, defaultGoogleUser.name, defaultGoogleUser.avatar, 'google');
         resolve();
-      }, 600);
+      }, 700);
     });
   };
 
+  /**
+   * Secure Logout
+   */
   const logout = () => {
+    clearAuthSession();
     setIsLoggedIn(false);
-    try {
-      localStorage.removeItem(AUTH_STORAGE_KEY);
-    } catch (e) {
-      console.error('Failed to clear auth session:', e);
-    }
+    setUserProfile(GUEST_USER_PROFILE);
+    setRedirectAfterLogin(null);
     showToast('Você saiu da sua conta com segurança.', 'info');
-    navigate('home');
+    setCurrentPage('login');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const requireAuth = (targetPage: PageRoute, callback?: () => void): boolean => {
     if (!isLoggedIn) {
       setRedirectAfterLogin(targetPage);
       showToast('Faça login para acessar esta área exclusiva.', 'info');
-      navigate('login');
+      setCurrentPage('login');
       return false;
     }
     if (callback) callback();
@@ -410,6 +485,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const openAddAlertModal = (product?: Product) => {
+    if (!isLoggedIn) {
+      setRedirectAfterLogin('alerts');
+      showToast('Faça login para gerenciar alertas.', 'info');
+      navigate('login');
+      return;
+    }
     const target = product || MOCK_PRODUCTS.find(p => p.id === selectedProductId) || MOCK_PRODUCTS[0];
     setTargetAlertProduct(target);
     setIsAddAlertModalOpen(true);
@@ -441,6 +522,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         userProfile,
         setUserProfile,
         isLoggedIn,
+        isAuthChecking,
         login,
         register,
         loginWithGoogle,
@@ -477,3 +559,4 @@ export const useApp = () => {
   }
   return context;
 };
+

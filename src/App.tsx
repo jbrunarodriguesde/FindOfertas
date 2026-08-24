@@ -4,6 +4,7 @@ import { Header } from './components/Header';
 import { BottomNav } from './components/BottomNav';
 import { Footer } from './components/Footer';
 import { Toast } from './components/Toast';
+import { Logo } from './components/Logo';
 import { EffectivePriceModal } from './components/EffectivePriceModal';
 import { AddCardModal } from './components/AddCardModal';
 import { AddAlertModal } from './components/AddAlertModal';
@@ -22,7 +23,22 @@ import { DashboardPage } from './pages/DashboardPage';
 import { LoginPage, RegisterPage, ForgotPasswordPage } from './pages/AuthPages';
 
 const MainRouter: React.FC = () => {
-  const { currentPage, isLoggedIn, navigate, setRedirectAfterLogin } = useApp();
+  const { currentPage, isLoggedIn, isAuthChecking, navigate, setRedirectAfterLogin } = useApp();
+
+  // 1. Discreet splash/loader while validating real session
+  if (isAuthChecking) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8FAFC]">
+        <div className="text-center space-y-4 animate-pulse">
+          <Logo size="lg" />
+          <div className="flex items-center justify-center gap-2 text-xs font-semibold text-slate-400">
+            <div className="w-3.5 h-3.5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            <span>Validando sessão segura...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const renderProtected = (component: React.ReactNode, route: any) => {
     if (!isLoggedIn) {
@@ -71,7 +87,8 @@ const MainRouter: React.FC = () => {
   const renderPage = () => {
     switch (currentPage) {
       case 'home':
-        return <HomePage />;
+        // If not logged in and visited root, render login as requested
+        return isLoggedIn ? <HomePage /> : <LoginPage />;
       case 'search':
         return <SearchResultsPage />;
       case 'product':
@@ -97,7 +114,7 @@ const MainRouter: React.FC = () => {
       case 'forgot-password':
         return <ForgotPasswordPage />;
       default:
-        return <HomePage />;
+        return isLoggedIn ? <HomePage /> : <LoginPage />;
     }
   };
 
@@ -133,3 +150,4 @@ export default function App() {
     </AppProvider>
   );
 }
+

@@ -18,8 +18,8 @@ import {
 
 export const LoginPage: React.FC = () => {
   const { login, loginWithGoogle, navigate, redirectAfterLogin } = useApp();
-  const [email, setEmail] = useState('brunarj51@gmail.com');
-  const [password, setPassword] = useState('SenhaForte123!');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
