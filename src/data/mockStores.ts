@@ -1,0 +1,60 @@
+import { Store } from '../types';
+
+export const MOCK_STORES: Store[] = [
+  {
+    id: 'store-amazon',
+    name: 'Amazon',
+    logo: 'https://images.unsplash.com/photo-1523474253246-72cb9dcdd8b6?w=128&auto=format&fit=crop&q=80',
+    rating: 4.9,
+    trustedBadge: true,
+    website: 'https://amazon.com.br',
+  },
+  {
+    id: 'store-mercadolivre',
+    name: 'Mercado Livre',
+    logo: 'https://images.unsplash.com/photo-1556742049-0a67c5574f73?w=128&auto=format&fit=crop&q=80',
+    rating: 4.8,
+    trustedBadge: true,
+    website: 'https://mercadolivre.com.br',
+  },
+  {
+    id: 'store-fastshop',
+    name: 'Fast Shop',
+    logo: 'https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=128&auto=format&fit=crop&q=80',
+    rating: 4.7,
+    trustedBadge: true,
+    website: 'https://fastshop.com.br',
+  },
+  {
+    id: 'store-magalu',
+    name: 'Magalu',
+    logo: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=128&auto=format&fit=crop&q=80',
+    rating: 4.8,
+    trustedBadge: true,
+    website: 'https://magazineluiza.com.br',
+  },
+  {
+    id: 'store-shopee',
+    name: 'Shopee',
+    logo: 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=128&auto=format&fit=crop&q=80',
+    rating: 4.6,
+    trustedBadge: true,
+    website: 'https://shopee.com.br',
+  },
+  {
+    id: 'store-kabum',
+    name: 'KaBuM!',
+    logo: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=128&auto=format&fit=crop&q=80',
+    rating: 4.9,
+    trustedBadge: true,
+    website: 'https://kabum.com.br',
+  },
+  {
+    id: 'store-casasbahia',
+    name: 'Casas Bahia',
+    logo: 'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=128&auto=format&fit=crop&q=80',
+    rating: 4.5,
+    trustedBadge: true,
+    website: 'https://casasbahia.com.br',
+  },
+];

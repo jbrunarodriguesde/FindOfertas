@@ -1,0 +1,7 @@
+{
+  "name": "Compara+",
+  "description": "Plataforma inteligente de comparação de preços considerando custo efetivo, frete, descontos, cashback, pontos e benefícios de cartões.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
