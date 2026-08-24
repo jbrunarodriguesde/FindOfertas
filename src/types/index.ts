@@ -166,6 +166,8 @@ export interface UserProfile {
   name: string;
   email: string;
   avatar: string;
+  authProvider?: 'google' | 'email';
+  joinedAt?: string;
   estimatedSavings: number;
   trackedOffersCount: number;
   activeAlertsCount: number;
@@ -189,6 +191,7 @@ export type PageRoute =
   | 'dashboard'
   | 'login'
   | 'register'
+  | 'forgot-password'
   | 'profile';
 
 export interface FilterOptions {

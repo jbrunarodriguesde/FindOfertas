@@ -16,7 +16,7 @@ import {
 import { MOCK_PRODUCTS } from '../data/mockProducts';
 
 export const DashboardPage: React.FC = () => {
-  const { userProfile, userCards, userAlerts, favoriteProductIds, navigate, setIsAddCardModalOpen } = useApp();
+  const { userProfile, userCards, alerts, favorites, navigate, setIsAddCardModalOpen } = useApp();
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
@@ -33,13 +33,13 @@ export const DashboardPage: React.FC = () => {
             Olá, {userProfile.name}! 👋
           </h1>
           <p className="text-slate-400 text-xs sm:text-sm max-w-xl">
-            Seu assistente inteligente já calculou <strong className="text-white">R$ 1.840,00</strong> em economias acumuladas em comparação ao preço bruto.
+            Seu assistente inteligente FindOfertas já calculou <strong className="text-white">{formatCurrency(userProfile.estimatedSavings || 1840)}</strong> em economias acumuladas em comparação ao preço bruto.
           </p>
         </div>
 
         <button
           onClick={() => navigate('search')}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-5 py-3 rounded-xl shadow-md shadow-blue-600/30 transition-all flex-shrink-0 relative z-10 active:scale-95"
+          className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-5 py-3 rounded-xl shadow-md shadow-blue-600/30 transition-all flex-shrink-0 relative z-10 active:scale-95 cursor-pointer"
         >
           Nova Comparação
         </button>
@@ -76,7 +76,7 @@ export const DashboardPage: React.FC = () => {
             <Bell className="w-4 h-4 text-blue-600" />
           </div>
           <div className="text-2xl font-black text-slate-900">
-            {userAlerts.length}
+            {alerts.length}
           </div>
           <span className="text-[11px] text-slate-500 font-medium block">Monitorando 24h</span>
         </div>
@@ -106,7 +106,7 @@ export const DashboardPage: React.FC = () => {
             </h2>
             <button
               onClick={() => navigate('wallet')}
-              className="text-xs font-bold text-blue-600 hover:text-blue-700"
+              className="text-xs font-bold text-blue-600 hover:text-blue-700 cursor-pointer"
             >
               Ver todos
             </button>
@@ -128,7 +128,7 @@ export const DashboardPage: React.FC = () => {
 
           <button
             onClick={() => setIsAddCardModalOpen(true)}
-            className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition-colors text-center active:scale-98"
+            className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition-colors text-center active:scale-98 cursor-pointer"
           >
             + Cadastrar Novo Cartão
           </button>
@@ -143,29 +143,33 @@ export const DashboardPage: React.FC = () => {
             </h2>
             <button
               onClick={() => navigate('alerts')}
-              className="text-xs font-bold text-blue-600 hover:text-blue-700"
+              className="text-xs font-bold text-blue-600 hover:text-blue-700 cursor-pointer"
             >
               Gerenciar
             </button>
           </div>
 
           <div className="space-y-2.5">
-            {userAlerts.slice(0, 3).map(alert => (
-              <div key={alert.id} className="p-3.5 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between">
-                <div className="min-w-0 pr-2">
-                  <h4 className="text-xs font-bold text-slate-900 truncate">{alert.productName}</h4>
-                  <p className="text-[11px] text-slate-500">Meta: {formatCurrency(alert.targetPrice)}</p>
+            {alerts.length === 0 ? (
+              <p className="text-xs text-slate-400 py-3 text-center">Nenhum alerta cadastrado no momento.</p>
+            ) : (
+              alerts.slice(0, 3).map(alert => (
+                <div key={alert.id} className="p-3.5 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between">
+                  <div className="min-w-0 pr-2">
+                    <h4 className="text-xs font-bold text-slate-900 truncate">{alert.product?.name || 'Produto'}</h4>
+                    <p className="text-[11px] text-slate-500">Meta: {formatCurrency(alert.targetEffectivePrice)}</p>
+                  </div>
+                  <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded flex-shrink-0">
+                    {formatCurrency(alert.currentEffectivePrice)}
+                  </span>
                 </div>
-                <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded flex-shrink-0">
-                  {formatCurrency(alert.currentEffectivePrice)}
-                </span>
-              </div>
-            ))}
+              ))
+            )}
           </div>
 
           <button
             onClick={() => navigate('search')}
-            className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition-colors text-center active:scale-98"
+            className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition-colors text-center active:scale-98 cursor-pointer"
           >
             + Criar Novo Alerta
           </button>

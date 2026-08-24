@@ -103,14 +103,14 @@ export const Footer: React.FC = () => {
         <div className="p-4 bg-white rounded-2xl border border-slate-200 text-[11px] text-slate-500 space-y-1 leading-relaxed">
           <p className="font-bold text-slate-700">Aviso Legal & Transparência:</p>
           <p>
-            O <strong>Compara+</strong> é uma plataforma independente de inteligência e comparação de preços. Os valores, estoques, regras de cashback e taxas de pontuação são atualizados periodicamente. Sempre confira as regras e condições finais no site da loja parceira antes de concluir o pagamento.
+            O <strong>FindOfertas</strong> é uma plataforma independente de inteligência e comparação de preços. Os valores, estoques, regras de cashback e taxas de pontuação são atualizados periodicamente. Sempre confira as regras e condições finais no site da loja parceira antes de concluir o pagamento.
           </p>
         </div>
 
         {/* Bottom copyright */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-200 text-[11px] text-slate-400">
           <div>
-            © {new Date().getFullYear()} Compara+. Todos os direitos reservados.
+            © {new Date().getFullYear()} FindOfertas. Todos os direitos reservados.
           </div>
           <div className="flex gap-4">
             <span className="hover:text-slate-600 cursor-pointer">Termos de Uso</span>

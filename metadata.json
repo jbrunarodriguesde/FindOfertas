@@ -1,6 +1,6 @@
 {
-  "name": "Compara+",
-  "description": "Plataforma inteligente de comparação de preços considerando custo efetivo, frete, descontos, cashback, pontos e benefícios de cartões.",
+  "name": "FindOfertas",
+  "description": "Plataforma inteligente de comparação de preços e custo efetivo real considerando frete, descontos, cashback, pontos, milhas e benefícios de cartões.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

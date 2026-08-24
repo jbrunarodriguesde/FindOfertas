@@ -104,77 +104,102 @@ export const Header: React.FC = () => {
           )}
         </button>
 
-        {/* User Profile & Cashback pill block */}
+        {/* User Profile & Cashback pill block / Auth Actions */}
         <div className="flex items-center gap-3 border-l border-slate-200 pl-4">
-          <div 
-            onClick={() => navigate('wallet')} 
-            className="text-right cursor-pointer hidden sm:block select-none"
-          >
-            <div className="text-xs text-slate-500">Olá, {userProfile.name.split(' ')[0]}</div>
-            <div className="text-sm font-bold text-slate-900 leading-tight">
-              {formatCurrency(userProfile.totalCashbackBalance)}{' '}
-              <span className="text-[10px] font-normal uppercase text-emerald-600 tracking-wider">Cashback</span>
-            </div>
-          </div>
-
-          <div className="relative">
-            <button
-              onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-              className="w-10 h-10 bg-slate-200 rounded-full border-2 border-white shadow-sm overflow-hidden flex items-center justify-center cursor-pointer hover:ring-2 hover:ring-blue-500/20 transition-all"
-            >
-              <img 
-                src={userProfile.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userProfile.name}`} 
-                alt={userProfile.name} 
-                className="w-full h-full object-cover"
-              />
-            </button>
-
-            {/* Profile Dropdown Menu */}
-            {isUserDropdownOpen && (
+          {isLoggedIn ? (
+            <>
               <div 
-                className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in slide-in-from-top-2"
-                onClick={() => setIsUserDropdownOpen(false)}
+                onClick={() => navigate('wallet')} 
+                className="text-right cursor-pointer hidden sm:block select-none"
               >
-                <div className="px-4 py-2 border-b border-slate-100">
-                  <p className="text-xs text-slate-500">Conectada como</p>
-                  <p className="text-sm font-semibold text-slate-800 truncate">{userProfile.email}</p>
+                <div className="text-xs text-slate-500">Olá, {userProfile.name.split(' ')[0]}</div>
+                <div className="text-sm font-bold text-slate-900 leading-tight">
+                  {formatCurrency(userProfile.totalCashbackBalance)}{' '}
+                  <span className="text-[10px] font-normal uppercase text-emerald-600 tracking-wider">Cashback</span>
                 </div>
-                
+              </div>
+
+              <div className="relative">
                 <button
-                  onClick={() => navigate('dashboard')}
-                  className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                  onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+                  className="w-10 h-10 bg-slate-200 rounded-full border-2 border-white shadow-sm overflow-hidden flex items-center justify-center cursor-pointer hover:ring-2 hover:ring-blue-500/20 transition-all"
+                  aria-label="Abrir menu do usuário"
                 >
-                  <Layers className="w-4 h-4 text-blue-600" /> Meu Dashboard
-                </button>
-                <button
-                  onClick={() => navigate('wallet')}
-                  className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                >
-                  <Wallet className="w-4 h-4 text-emerald-600" /> Minha Carteira & Cartões
-                </button>
-                <button
-                  onClick={() => navigate('benefits')}
-                  className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                >
-                  <Sparkles className="w-4 h-4 text-amber-500" /> Meus Benefícios & Promoções
-                </button>
-                <button
-                  onClick={() => navigate('alerts')}
-                  className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                >
-                  <TrendingDown className="w-4 h-4 text-blue-500" /> Alertas de Custo Efetivo
+                  <img 
+                    src={userProfile.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userProfile.name}`} 
+                    alt={userProfile.name} 
+                    className="w-full h-full object-cover"
+                  />
                 </button>
 
-                <div className="border-t border-slate-100 my-1"></div>
-                <button
-                  onClick={logout}
-                  className="w-full text-left px-4 py-2 text-xs text-rose-600 hover:bg-rose-50 flex items-center gap-2"
-                >
-                  <LogOut className="w-4 h-4" /> Sair da conta
-                </button>
+                {/* Profile Dropdown Menu */}
+                {isUserDropdownOpen && (
+                  <div 
+                    className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in slide-in-from-top-2"
+                    onClick={() => setIsUserDropdownOpen(false)}
+                  >
+                    <div className="px-4 py-2 border-b border-slate-100">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-slate-500">Conectada como</p>
+                        {userProfile.authProvider === 'google' && (
+                          <span className="text-[9px] bg-blue-50 text-blue-700 font-bold px-1.5 py-0.5 rounded border border-blue-100">Google</span>
+                        )}
+                      </div>
+                      <p className="text-sm font-semibold text-slate-800 truncate">{userProfile.email}</p>
+                    </div>
+                    
+                    <button
+                      onClick={() => navigate('dashboard')}
+                      className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                    >
+                      <Layers className="w-4 h-4 text-blue-600" /> Meu Dashboard
+                    </button>
+                    <button
+                      onClick={() => navigate('wallet')}
+                      className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                    >
+                      <Wallet className="w-4 h-4 text-emerald-600" /> Minha Carteira & Cartões
+                    </button>
+                    <button
+                      onClick={() => navigate('benefits')}
+                      className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                    >
+                      <Sparkles className="w-4 h-4 text-amber-500" /> Meus Benefícios & Promoções
+                    </button>
+                    <button
+                      onClick={() => navigate('alerts')}
+                      className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                    >
+                      <TrendingDown className="w-4 h-4 text-blue-500" /> Alertas de Custo Efetivo
+                    </button>
+
+                    <div className="border-t border-slate-100 my-1"></div>
+                    <button
+                      onClick={logout}
+                      className="w-full text-left px-4 py-2 text-xs text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer"
+                    >
+                      <LogOut className="w-4 h-4" /> Sair da conta
+                    </button>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </>
+          ) : (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => navigate('login')}
+                className="text-xs font-bold text-slate-700 hover:text-blue-600 px-3 py-2 rounded-xl transition-colors cursor-pointer"
+              >
+                Entrar
+              </button>
+              <button
+                onClick={() => navigate('register')}
+                className="text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-xl shadow-xs transition-all cursor-pointer"
+              >
+                Cadastre-se
+              </button>
+            </div>
+          )}
         </div>
 
       </div>

@@ -33,8 +33,8 @@ export const Logo: React.FC<LogoProps> = ({ className = '', size = 'md', showTex
         </svg>
       </div>
       {showText && (
-        <span className={`${textSizes[size]} font-black text-blue-600 tracking-tight`}>
-          Compara<span className="text-emerald-500">+</span>
+        <span className={`${textSizes[size]} font-black text-slate-900 tracking-tight`}>
+          Find<span className="text-blue-600">Ofertas</span>
         </span>
       )}
     </div>

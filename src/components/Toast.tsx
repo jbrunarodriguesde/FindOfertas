@@ -68,7 +68,7 @@ export const DisclaimerBanner: React.FC<{ compact?: boolean }> = ({ compact = fa
         </span>
       </div>
       <span className="text-[10px] uppercase font-bold tracking-wider text-blue-700 bg-white px-2 py-0.5 rounded border border-blue-200 flex-shrink-0">
-        Compara+ Pro
+        FindOfertas Pro
       </span>
     </div>
   );

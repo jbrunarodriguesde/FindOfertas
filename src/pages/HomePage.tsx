@@ -230,7 +230,7 @@ export const HomePage: React.FC = () => {
               Cadastre seus cartões e multiplique sua economia
             </h3>
             <p className="text-slate-400 text-xs sm:text-sm">
-              Ao informar seus cartões (sem número ou senha), o Compara+ calcula automaticamente os pontos por dólar e cashback exatos de cada oferta.
+              Ao informar seus cartões (sem número ou senha), o FindOfertas calcula automaticamente os pontos por dólar e cashback exatos de cada oferta.
             </p>
           </div>
 
