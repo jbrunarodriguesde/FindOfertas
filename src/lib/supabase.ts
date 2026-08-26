@@ -20,7 +20,7 @@ export const isSupabaseConfigured: boolean = Boolean(
 
 // Fallback dummy values to prevent runtime instantiation crash if env is unconfigured in development
 const validSupabaseUrl = isSupabaseConfigured ? supabaseUrl : 'https://findofertas-unconfigured.supabase.co';
-const validSupabaseKey = isSupabaseConfigured ? supabaseKey : 'sb_publishable_2ptYos3CBZBEj9tt8gxKkw_fmpKD8Vd';
+const validSupabaseKey = isSupabaseConfigured ? supabaseKey : 'sb-unconfigured-key';
 
 export const supabase: SupabaseClient = createClient(validSupabaseUrl, validSupabaseKey, {
   auth: {
