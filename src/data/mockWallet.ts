@@ -78,7 +78,7 @@ export const MOCK_LOYALTY_PROGRAMS: LoyaltyProgram[] = [
     name: 'Livelo',
     logo: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=64&auto=format&fit=crop&q=80',
     category: 'points',
-    balance: 28400,
+    balance: 0,
     expiringSoon: 0,
     valuePerThousand: 35.0,
     partnerStores: ['Amazon', 'Fast Shop', 'Magalu', 'Casas Bahia']
@@ -88,8 +88,8 @@ export const MOCK_LOYALTY_PROGRAMS: LoyaltyProgram[] = [
     name: 'Esfera Santander',
     logo: 'https://images.unsplash.com/photo-1556742049-0a67c5574f73?w=64&auto=format&fit=crop&q=80',
     category: 'points',
-    balance: 16800,
-    expiringSoon: 1200,
+    balance: 0,
+    expiringSoon: 0,
     valuePerThousand: 35.0,
     partnerStores: ['Magalu', 'Fast Shop', 'Casas Bahia']
   },
@@ -98,7 +98,7 @@ export const MOCK_LOYALTY_PROGRAMS: LoyaltyProgram[] = [
     name: 'Smiles GOL',
     logo: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=64&auto=format&fit=crop&q=80',
     category: 'miles',
-    balance: 75000,
+    balance: 0,
     expiringSoon: 0,
     valuePerThousand: 17.5,
     partnerStores: ['Shopping Smiles', 'Casas Bahia', 'Ponto']
@@ -108,7 +108,7 @@ export const MOCK_LOYALTY_PROGRAMS: LoyaltyProgram[] = [
     name: 'LATAM Pass',
     logo: 'https://images.unsplash.com/photo-1569154941061-e231b4725ef1?w=64&auto=format&fit=crop&q=80',
     category: 'miles',
-    balance: 45000,
+    balance: 0,
     expiringSoon: 0,
     valuePerThousand: 22.0,
     partnerStores: ['Shopping LATAM Pass', 'Magalu']
@@ -118,7 +118,8 @@ export const MOCK_LOYALTY_PROGRAMS: LoyaltyProgram[] = [
     name: 'Méliuz Cashback',
     logo: 'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=64&auto=format&fit=crop&q=80',
     category: 'cashback',
-    balance: 127.50,
+    balance: 0,
+    expiringSoon: 0,
     valuePerThousand: 1000.0,
     partnerStores: ['Amazon', 'Fast Shop', 'KaBuM!', 'Nike']
   }

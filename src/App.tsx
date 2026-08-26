@@ -42,44 +42,7 @@ const MainRouter: React.FC = () => {
 
   const renderProtected = (component: React.ReactNode, route: any) => {
     if (!isLoggedIn) {
-      return (
-        <div className="min-h-[70vh] flex items-center justify-center px-4 py-12">
-          <div className="max-w-md w-full bg-white border border-slate-200 rounded-3xl p-8 text-center space-y-5 shadow-sm">
-            <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto border border-blue-100">
-              <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-              </svg>
-            </div>
-            <div className="space-y-2">
-              <h2 className="text-xl font-black text-slate-900">Área Exclusiva para Membros</h2>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                Faça login ou cadastre-se no FindOfertas para acessar sua carteira, benefícios e alertas personalizados.
-              </p>
-            </div>
-            <div className="pt-2 flex flex-col gap-2.5">
-              <button
-                onClick={() => {
-                  setRedirectAfterLogin(route);
-                  navigate('login');
-                }}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-xs shadow-md shadow-blue-200 transition-all cursor-pointer"
-              >
-                Acessar Minha Conta
-              </button>
-              <button
-                onClick={() => {
-                  setRedirectAfterLogin(route);
-                  navigate('register');
-                }}
-                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl text-xs transition-all cursor-pointer"
-              >
-                Criar Conta Gratuita
-              </button>
-            </div>
-          </div>
-        </div>
-      );
+      return <LoginPage />;
     }
     return component;
   };
@@ -87,7 +50,6 @@ const MainRouter: React.FC = () => {
   const renderPage = () => {
     switch (currentPage) {
       case 'home':
-        // If not logged in and visited root, render login as requested
         return isLoggedIn ? <HomePage /> : <LoginPage />;
       case 'search':
         return <SearchResultsPage />;
@@ -108,9 +70,9 @@ const MainRouter: React.FC = () => {
       case 'dashboard':
         return renderProtected(<DashboardPage />, 'dashboard');
       case 'login':
-        return <LoginPage />;
+        return isLoggedIn ? <DashboardPage /> : <LoginPage />;
       case 'register':
-        return <RegisterPage />;
+        return isLoggedIn ? <DashboardPage /> : <RegisterPage />;
       case 'forgot-password':
         return <ForgotPasswordPage />;
       default:

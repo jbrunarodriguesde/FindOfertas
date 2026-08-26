@@ -231,8 +231,8 @@ export const Header: React.FC = () => {
                   />
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-slate-900 truncate">{userProfile.name}</p>
-                    <p className="text-[11px] text-emerald-600 font-semibold">
-                      {formatCurrency(userProfile.totalCashbackBalance)} em cashback
+                    <p className="text-[11px] text-blue-600 font-semibold truncate">
+                      {userProfile.email}
                     </p>
                   </div>
                 </div>

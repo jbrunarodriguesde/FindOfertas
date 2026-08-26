@@ -566,28 +566,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     try {
       if (!isSupabaseConfigured) {
-        // Safe simulation if Supabase keys aren't configured yet
-        const metaName = email.split('@')[0].replace('.', ' ');
-        const formattedName = metaName.charAt(0).toUpperCase() + metaName.slice(1);
-        setIsLoggedIn(true);
-        setUserProfile({
-          name: formattedName,
-          email: email.trim(),
-          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(formattedName)}`,
-          authProvider: 'email',
-          joinedAt: new Date().toLocaleDateString('pt-BR'),
-          estimatedSavings: 0,
-          trackedOffersCount: 0,
-          activeAlertsCount: 0,
-          favoritesCount: 0,
-          totalCashbackBalance: 0,
-          totalPointsBalance: 0,
-          totalMilesBalance: 0
-        });
-        showToast(`Bem-vindo(a) ao FindOfertas, ${formattedName}!`, 'success');
-        navigate(redirectAfterLogin || 'dashboard');
-        setRedirectAfterLogin(null);
-        return { success: true };
+        return { 
+          success: false, 
+          error: 'Configuração do Supabase pendente (VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY / VITE_SUPABASE_ANON_KEY necessárias).' 
+        };
       }
 
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -601,6 +583,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           msg = 'E-mail ou senha incorretos. Verifique suas credenciais.';
         } else if (error.message.includes('Email not confirmed')) {
           msg = 'E-mail não confirmado. Verifique sua caixa de entrada.';
+        } else {
+          msg = error.message;
         }
         return { success: false, error: msg };
       }
@@ -629,26 +613,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     try {
       if (!isSupabaseConfigured) {
-        const formattedName = name.trim();
-        setIsLoggedIn(true);
-        setUserProfile({
-          name: formattedName,
-          email: email.trim(),
-          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(formattedName)}`,
-          authProvider: 'email',
-          joinedAt: new Date().toLocaleDateString('pt-BR'),
-          estimatedSavings: 0,
-          trackedOffersCount: 0,
-          activeAlertsCount: 0,
-          favoritesCount: 0,
-          totalCashbackBalance: 0,
-          totalPointsBalance: 0,
-          totalMilesBalance: 0
-        });
-        showToast(`Conta criada com sucesso! Bem-vindo(a), ${formattedName}!`, 'success');
-        navigate(redirectAfterLogin || 'dashboard');
-        setRedirectAfterLogin(null);
-        return { success: true };
+        return { 
+          success: false, 
+          error: 'Configuração do Supabase pendente (VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY / VITE_SUPABASE_ANON_KEY necessárias).' 
+        };
       }
 
       const { data, error } = await supabase.auth.signUp({
@@ -669,6 +637,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           msg = 'Este e-mail já está cadastrado. Faça login.';
         } else if (error.message.includes('Password should be at least')) {
           msg = 'A senha deve ter no mínimo 6 caracteres.';
+        } else {
+          msg = error.message;
         }
         return { success: false, error: msg };
       }
@@ -692,31 +662,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
    */
   const loginWithGoogle = async (): Promise<void> => {
     if (!isSupabaseConfigured) {
-      // Fallback in preview if env vars not provided
-      const googleUser = {
-        name: 'Usuário Google',
-        email: 'usuario.google@gmail.com',
-        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
-        authProvider: 'google' as const
-      };
-      setIsLoggedIn(true);
-      setUserProfile({
-        name: googleUser.name,
-        email: googleUser.email,
-        avatar: googleUser.avatar,
-        authProvider: 'google',
-        joinedAt: new Date().toLocaleDateString('pt-BR'),
-        estimatedSavings: 0,
-        trackedOffersCount: 0,
-        activeAlertsCount: 0,
-        favoritesCount: 0,
-        totalCashbackBalance: 0,
-        totalPointsBalance: 0,
-        totalMilesBalance: 0
-      });
-      showToast('Conectado com o Google!', 'success');
-      navigate(redirectAfterLogin || 'dashboard');
-      setRedirectAfterLogin(null);
+      showToast('Configuração do Supabase Auth pendente nas variáveis de ambiente.', 'error');
       return;
     }
 
@@ -729,6 +675,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (error) {
       console.error('Supabase Google OAuth error:', error);
+      showToast(error.message || 'Falha ao conectar com o Google.', 'error');
       throw new Error(error.message);
     }
   };
@@ -742,7 +689,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     if (!isSupabaseConfigured) {
-      return { success: true };
+      return { 
+        success: false, 
+        error: 'Configuração do Supabase pendente para envio de e-mail de recuperação.' 
+      };
     }
 
     try {
