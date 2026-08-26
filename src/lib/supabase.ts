@@ -1,20 +1,26 @@
-import { createClient, SupabaseClient, User } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { FavoriteItem, PriceAlert, UserCard, UserProfile } from '../types';
 
-// Environment variables
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+// Environment variables from Vite configuration
+// Preferred: VITE_SUPABASE_PUBLISHABLE_KEY
+// Fallback: VITE_SUPABASE_ANON_KEY (for backwards compatibility)
+const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim();
+const supabaseKey = (
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 
+  import.meta.env.VITE_SUPABASE_ANON_KEY || 
+  ''
+).trim();
 
-export const isSupabaseConfigured = Boolean(
+export const isSupabaseConfigured: boolean = Boolean(
   supabaseUrl && 
-  supabaseAnonKey && 
+  supabaseKey && 
   supabaseUrl.startsWith('https://') &&
   !supabaseUrl.includes('placeholder')
 );
 
 // Fallback dummy values to prevent runtime instantiation crash if env is unconfigured in development
-const validSupabaseUrl = isSupabaseConfigured ? supabaseUrl : 'https://findofertas-placeholder.supabase.co';
-const validSupabaseKey = isSupabaseConfigured ? supabaseAnonKey : 'sb-placeholder-anon-key';
+const validSupabaseUrl = isSupabaseConfigured ? supabaseUrl : 'https://findofertas-unconfigured.supabase.co';
+const validSupabaseKey = isSupabaseConfigured ? supabaseKey : 'sb-unconfigured-key';
 
 export const supabase: SupabaseClient = createClient(validSupabaseUrl, validSupabaseKey, {
   auth: {
@@ -23,6 +29,7 @@ export const supabase: SupabaseClient = createClient(validSupabaseUrl, validSupa
     detectSessionInUrl: true
   }
 });
+
 
 // Database Entity Types matching PostgreSQL Schema
 export interface DbProfile {
