@@ -1,6 +1,6 @@
 import { Offer, UserCard, LoyaltyProgram, PriceAlert, FavoriteItem, PriceHistoryData } from '../types';
 import { MOCK_OFFERS } from '../data/mockOffers';
-import { MOCK_USER_CARDS, MOCK_LOYALTY_PROGRAMS } from '../data/mockWallet';
+import { DEFAULT_USER_CARDS, MOCK_LOYALTY_PROGRAMS } from '../data/mockWallet';
 import { MOCK_PRODUCTS } from '../data/mockProducts';
 import { generateMockHistory } from '../data/mockPriceHistory';
 
@@ -18,7 +18,7 @@ export const offerService = {
 
 export const walletService = {
   async getUserCards(): Promise<UserCard[]> {
-    return [...MOCK_USER_CARDS];
+    return [...DEFAULT_USER_CARDS];
   },
   async getLoyaltyPrograms(): Promise<LoyaltyProgram[]> {
     return [...MOCK_LOYALTY_PROGRAMS];

@@ -33,7 +33,7 @@ export const DashboardPage: React.FC = () => {
             Olá, {userProfile.name}! 👋
           </h1>
           <p className="text-slate-400 text-xs sm:text-sm max-w-xl">
-            Seu assistente inteligente FindOfertas já calculou <strong className="text-white">{formatCurrency(userProfile.estimatedSavings || 1840)}</strong> em economias acumuladas em comparação ao preço bruto.
+            Seu assistente inteligente FindOfertas calcula em tempo real o preço efetivo em cada loja considerando seus cartões e benefícios cadastrados.
           </p>
         </div>
 
@@ -50,24 +50,13 @@ export const DashboardPage: React.FC = () => {
         
         <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-1">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 uppercase">Cashback</span>
-            <Wallet className="w-4 h-4 text-emerald-600" />
+            <span className="text-xs font-bold text-slate-400 uppercase">Favoritos</span>
+            <Heart className="w-4 h-4 text-rose-600" />
           </div>
           <div className="text-2xl font-black text-slate-900">
-            {formatCurrency(userProfile.totalCashbackBalance)}
+            {favorites.length}
           </div>
-          <span className="text-[11px] text-emerald-600 font-bold block">Disponível p/ Pix</span>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-1">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 uppercase">Pontos & Milhas</span>
-            <Star className="w-4 h-4 text-amber-500 fill-amber-400" />
-          </div>
-          <div className="text-2xl font-black text-slate-900">
-            {formatCompactNumber(userProfile.totalPointsBalance + userProfile.totalMilesBalance)}
-          </div>
-          <span className="text-[11px] text-blue-600 font-bold block">Em 2 programas</span>
+          <span className="text-[11px] text-slate-500 font-medium block">Produtos salvos</span>
         </div>
 
         <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-1">
@@ -78,7 +67,7 @@ export const DashboardPage: React.FC = () => {
           <div className="text-2xl font-black text-slate-900">
             {alerts.length}
           </div>
-          <span className="text-[11px] text-slate-500 font-medium block">Monitorando 24h</span>
+          <span className="text-[11px] text-blue-600 font-bold block">Monitorando 24h</span>
         </div>
 
         <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-1">
@@ -90,6 +79,17 @@ export const DashboardPage: React.FC = () => {
             {userCards.filter(c => c.active).length}
           </div>
           <span className="text-[11px] text-slate-500 font-medium block">Multiplicando pontos</span>
+        </div>
+
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-1">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-400 uppercase">Benefícios</span>
+            <Star className="w-4 h-4 text-amber-500 fill-amber-400" />
+          </div>
+          <div className="text-2xl font-black text-slate-900">
+            Automático
+          </div>
+          <span className="text-[11px] text-emerald-600 font-bold block">Melhor Preço Efetivo</span>
         </div>
 
       </div>

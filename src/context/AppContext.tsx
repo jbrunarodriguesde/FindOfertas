@@ -11,14 +11,9 @@ import {
   FilterOptions 
 } from '../types';
 import { MOCK_PRODUCTS } from '../data/mockProducts';
-import { MOCK_USER_CARDS, MOCK_LOYALTY_PROGRAMS, GUEST_USER_PROFILE, INITIAL_USER_PROFILE } from '../data/mockWallet';
-import { 
-  getValidatedSession, 
-  saveAuthSession, 
-  clearAuthSession, 
-  getUserFromRegistry,
-  isDemoModeActive 
-} from '../utils/auth';
+import { DEFAULT_USER_CARDS, MOCK_LOYALTY_PROGRAMS, GUEST_USER_PROFILE } from '../data/mockWallet';
+import { supabase, supabaseService, isSupabaseConfigured } from '../lib/supabase';
+import { User } from '@supabase/supabase-js';
 
 export interface ToastMessage {
   id: string;
@@ -31,6 +26,9 @@ interface AppContextType {
   navigate: (page: PageRoute, productId?: string) => void;
   searchQuery: string;
   setSearchQuery: (q: string) => void;
+  searchHistory: string[];
+  recordSearch: (query: string) => void;
+  clearSearchHistory: () => void;
   selectedProductId: string;
   setSelectedProductId: (id: string) => void;
   activeProduct: Product;
@@ -39,20 +37,24 @@ interface AppContextType {
   addCard: (card: Omit<UserCard, 'id'>) => void;
   userPrograms: LoyaltyProgram[];
   favorites: FavoriteItem[];
+  favoriteProductIds: string[];
   toggleFavorite: (productId: string) => void;
   isFavorite: (productId: string) => boolean;
   alerts: PriceAlert[];
+  userAlerts: PriceAlert[];
   addAlert: (productId: string, targetPrice: number) => void;
   toggleAlertActive: (alertId: string) => void;
   deleteAlert: (alertId: string) => void;
+  removeAlert: (alertId: string) => void;
   userProfile: UserProfile;
   setUserProfile: React.Dispatch<React.SetStateAction<UserProfile>>;
   isLoggedIn: boolean;
   isAuthChecking: boolean;
-  login: (email: string, name?: string, avatar?: string, authProvider?: 'google' | 'email') => void;
-  register: (name: string, email: string) => void;
+  login: (email: string, password?: string) => Promise<{ success: boolean; error?: string }>;
+  register: (name: string, email: string, password?: string) => Promise<{ success: boolean; error?: string }>;
   loginWithGoogle: () => Promise<void>;
-  logout: () => void;
+  resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
   redirectAfterLogin: PageRoute | null;
   setRedirectAfterLogin: (page: PageRoute | null) => void;
   requireAuth: (targetPage: PageRoute, callback?: () => void) => boolean;
@@ -93,17 +95,24 @@ const PROTECTED_ROUTES: PageRoute[] = [
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // State initialization: defaults to unauthenticated guest mode
+  // Authentication & Session State (Starts 100% clean and unauthenticated)
   const [isAuthChecking, setIsAuthChecking] = useState<boolean>(true);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile>(GUEST_USER_PROFILE);
   const [currentPage, setCurrentPage] = useState<PageRoute>('login');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedProductId, setSelectedProductId] = useState<string>('prod-iphone-15');
-  const [userCards, setUserCards] = useState<UserCard[]>(MOCK_USER_CARDS);
-  const [userPrograms] = useState<LoyaltyProgram[]>(MOCK_LOYALTY_PROGRAMS);
   const [redirectAfterLogin, setRedirectAfterLogin] = useState<PageRoute | null>(null);
 
+  // App domain state (Starts strictly empty for every user)
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchHistory, setSearchHistory] = useState<string[]>([]);
+  const [selectedProductId, setSelectedProductId] = useState<string>('prod-iphone-15');
+  const [userCards, setUserCards] = useState<UserCard[]>(DEFAULT_USER_CARDS);
+  const [userPrograms] = useState<LoyaltyProgram[]>(MOCK_LOYALTY_PROGRAMS);
+  const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
+  const [alerts, setAlerts] = useState<PriceAlert[]>([]);
+
+  // UI Modals & Filters
   const [filters, setFilters] = useState<FilterOptions>(DEFAULT_FILTERS);
   const [calculationModalOffer, setCalculationModalOffer] = useState<Offer | null>(null);
   const [isAddCardModalOpen, setIsAddCardModalOpen] = useState(false);
@@ -111,91 +120,241 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [targetAlertProduct, setTargetAlertProduct] = useState<Product | null>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-  // Initial favorites
-  const [favorites, setFavorites] = useState<FavoriteItem[]>([
-    {
-      id: 'fav-1',
-      productId: 'prod-phone-premium-zx',
-      product: MOCK_PRODUCTS[1],
-      addedAt: 'Há 2 dias',
-      currentPrice: 4299,
-      currentEffectivePrice: 3850,
-      lowestPrice: 4199,
-      priceChangePct: 5.2,
-      alertActive: true,
-      targetPrice: 3900
-    },
-    {
-      id: 'fav-2',
-      productId: 'prod-fone-sony-xm5',
-      product: MOCK_PRODUCTS[2],
-      addedAt: 'Há 5 dias',
-      currentPrice: 1250,
-      currentEffectivePrice: 1120,
-      lowestPrice: 1199,
-      priceChangePct: -12.5,
-      alertActive: false
-    }
-  ]);
-
-  // Initial Alerts
-  const [alerts, setAlerts] = useState<PriceAlert[]>([
-    {
-      id: 'alt-1',
-      productId: 'prod-notebook-macbook-air',
-      product: MOCK_PRODUCTS[4],
-      targetEffectivePrice: 3000,
-      currentEffectivePrice: 8650,
-      currentPrice: 9499,
-      active: true,
-      createdAt: '18 Fev 2025',
-      triggered: false,
-      notifyEmail: true,
-      notifyPush: true
-    }
-  ]);
-
-  // Real session verification on app startup
-  useEffect(() => {
-    const initAuth = () => {
-      const validated = getValidatedSession();
-      
-      if (validated && validated.user) {
-        // Legitimate active session found
-        setIsLoggedIn(true);
-        setUserProfile(validated.user);
-        setCurrentPage('dashboard');
-      } else {
-        // No valid session: ensure guest state and route to login
-        setIsLoggedIn(false);
-        setUserProfile(GUEST_USER_PROFILE);
-        setCurrentPage('login');
-      }
-      
-      setIsAuthChecking(false);
-    };
-
-    initAuth();
-  }, []);
-
+  // Helper for toasts
   const showToast = (message: string, type: 'success' | 'info' | 'warning' | 'error' = 'success') => {
-    const id = Date.now().toString();
+    const id = Date.now().toString() + Math.random().toString(36).substring(2, 7);
     setToasts(prev => [...prev, { id, message, type }]);
     setTimeout(() => {
       removeToast(id);
-    }, 4000);
+    }, 4500);
   };
 
   const removeToast = (id: string) => {
     setToasts(prev => prev.filter(t => t.id !== id));
   };
 
+  /**
+   * Loads real user data from Supabase database tables for the authenticated user_id
+   */
+  const loadUserData = async (authUser: User) => {
+    const uid = authUser.id;
+    setCurrentUserId(uid);
+    setIsLoggedIn(true);
+
+    try {
+      // 1. Fetch Profile
+      let dbProfile = await supabaseService.getProfile(uid);
+      const metaName = authUser.user_metadata?.full_name || authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'Usuário';
+      const metaAvatar = authUser.user_metadata?.avatar_url || authUser.user_metadata?.picture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(metaName)}`;
+
+      if (!dbProfile) {
+        // Automatic profile creation if not present yet
+        dbProfile = await supabaseService.upsertProfile(uid, {
+          name: metaName,
+          email: authUser.email || '',
+          avatarUrl: metaAvatar
+        });
+      }
+
+      // 2. Fetch User Favorites (Isolated by user_id via RLS)
+      const dbFavorites = await supabaseService.getFavorites(uid);
+      const mappedFavorites: FavoriteItem[] = dbFavorites.map(f => {
+        const prod = MOCK_PRODUCTS.find(p => p.id === f.product_id) || {
+          id: f.product_id,
+          name: f.product_name,
+          brand: '',
+          model: '',
+          category: 'Geral',
+          image: f.product_image || 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=300&auto=format&fit=crop&q=80',
+          rating: 4.8,
+          reviewsCount: 120,
+          description: '',
+          specs: [],
+          basePrice: f.price || 0,
+          priceChangePct: 0,
+          lowestPrice30d: f.price || 0,
+          highestPrice30d: f.price || 0,
+          avgPrice30d: f.price || 0
+        };
+
+        return {
+          id: f.id,
+          productId: f.product_id,
+          product: prod,
+          addedAt: new Date(f.created_at).toLocaleDateString('pt-BR'),
+          currentPrice: prod.basePrice,
+          currentEffectivePrice: Math.round(prod.basePrice * 0.94),
+          lowestPrice: prod.lowestPrice30d,
+          priceChangePct: prod.priceChangePct,
+          alertActive: false
+        };
+      });
+      setFavorites(mappedFavorites);
+
+      // 3. Fetch User Alerts (Isolated by user_id via RLS)
+      const dbAlerts = await supabaseService.getAlerts(uid);
+      const mappedAlerts: PriceAlert[] = dbAlerts.map(a => {
+        const prod = MOCK_PRODUCTS.find(p => p.id === a.product_id) || {
+          id: a.product_id,
+          name: a.product_name,
+          brand: '',
+          model: '',
+          category: 'Geral',
+          image: a.product_image || 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=300&auto=format&fit=crop&q=80',
+          rating: 4.8,
+          reviewsCount: 120,
+          description: '',
+          specs: [],
+          basePrice: a.current_price || a.target_price,
+          priceChangePct: 0,
+          lowestPrice30d: a.target_price,
+          highestPrice30d: a.target_price * 1.2,
+          avgPrice30d: a.target_price * 1.1
+        };
+
+        return {
+          id: a.id,
+          productId: a.product_id,
+          product: prod,
+          targetEffectivePrice: a.target_price,
+          currentEffectivePrice: a.current_effective_price || prod.basePrice,
+          currentPrice: a.current_price || prod.basePrice,
+          active: a.active,
+          createdAt: new Date(a.created_at).toLocaleDateString('pt-BR'),
+          triggered: false,
+          notifyEmail: a.notify_email,
+          notifyPush: a.notify_push
+        };
+      });
+      setAlerts(mappedAlerts);
+
+      // 4. Fetch Search History
+      const dbHistory = await supabaseService.getSearchHistory(uid);
+      setSearchHistory(dbHistory);
+
+      // 5. Fetch User Cards (Benefits calculation)
+      const dbCards = await supabaseService.getUserCards(uid);
+      if (dbCards && dbCards.length > 0) {
+        setUserCards(dbCards.map(c => ({
+          id: c.id,
+          name: c.name,
+          bank: c.bank,
+          brand: (c.brand as any) || 'Mastercard',
+          tier: (c.tier as any) || 'Black',
+          program: 'Pontos & Milhas',
+          pointsPerUsd: Number(c.points_per_usd) || 0,
+          cashbackRate: Number(c.cashback_rate) || 0,
+          annualFee: 0,
+          colorTheme: c.brand === 'Visa'
+            ? 'from-[#1e1e1e] to-[#0a0a0a] text-amber-400 border-zinc-700'
+            : 'from-[#1e293b] to-[#0f172a] text-white border-slate-700',
+          active: c.active,
+          specialBenefits: ['Benefício Ativo']
+        })));
+      } else {
+        setUserCards(DEFAULT_USER_CARDS);
+      }
+
+      // 6. Build App UserProfile
+      const finalProfile: UserProfile = {
+        name: dbProfile?.name || metaName,
+        email: dbProfile?.email || authUser.email || '',
+        avatar: dbProfile?.avatar_url || metaAvatar,
+        authProvider: authUser.app_metadata?.provider === 'google' ? 'google' : 'email',
+        joinedAt: new Date(authUser.created_at).toLocaleDateString('pt-BR'),
+        estimatedSavings: 0,
+        trackedOffersCount: 0,
+        activeAlertsCount: mappedAlerts.length,
+        favoritesCount: mappedFavorites.length,
+        totalCashbackBalance: 0, // Informational benefits representation only
+        totalPointsBalance: 0,
+        totalMilesBalance: 0
+      };
+
+      setUserProfile(finalProfile);
+    } catch (err) {
+      console.error('Error synchronizing user data with Supabase:', err);
+    }
+  };
+
+  /**
+   * Resets local states to clean guest / unauthenticated state
+   */
+  const resetToCleanGuest = () => {
+    setIsLoggedIn(false);
+    setCurrentUserId(null);
+    setUserProfile(GUEST_USER_PROFILE);
+    setFavorites([]);
+    setAlerts([]);
+    setSearchHistory([]);
+    setUserCards(DEFAULT_USER_CARDS);
+  };
+
+  // Real Supabase Auth listener
+  useEffect(() => {
+    let isMounted = true;
+
+    const setupAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.warn('Supabase auth getSession error:', error.message);
+        }
+
+        if (session && session.user && isMounted) {
+          await loadUserData(session.user);
+          if (currentPage === 'login' || currentPage === 'register') {
+            setCurrentPage('dashboard');
+          }
+        } else if (isMounted) {
+          resetToCleanGuest();
+          // If on a protected route without session, go to login
+          if (PROTECTED_ROUTES.includes(currentPage)) {
+            setCurrentPage('login');
+          }
+        }
+      } catch (err) {
+        console.warn('Error during Supabase auth setup:', err);
+        if (isMounted) resetToCleanGuest();
+      } finally {
+        if (isMounted) setIsAuthChecking(false);
+      }
+    };
+
+    setupAuth();
+
+    // Subscribe to real-time auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!isMounted) return;
+
+      if (event === 'SIGNED_IN' && session?.user) {
+        await loadUserData(session.user);
+        if (redirectAfterLogin) {
+          const dest = redirectAfterLogin;
+          setRedirectAfterLogin(null);
+          setCurrentPage(dest);
+        } else {
+          setCurrentPage('dashboard');
+        }
+      } else if (event === 'SIGNED_OUT' || !session) {
+        resetToCleanGuest();
+        setCurrentPage('login');
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      subscription?.unsubscribe();
+    };
+  }, []);
+
   const navigate = (page: PageRoute, productId?: string) => {
     if (productId) {
       setSelectedProductId(productId);
     }
 
-    // Protect routes if user is not authenticated
+    // Protection check for protected routes
     if (PROTECTED_ROUTES.includes(page) && !isLoggedIn) {
       setRedirectAfterLogin(page);
       showToast('Faça login para acessar esta área.', 'info');
@@ -208,38 +367,97 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const toggleCardActive = (cardId: string) => {
-    setUserCards(prev => prev.map(c => c.id === cardId ? { ...c, active: !c.active } : c));
-    showToast('Preferências de cartões atualizadas!', 'info');
+  /**
+   * Search query logging with Supabase persistence
+   */
+  const recordSearch = async (query: string) => {
+    const q = query.trim();
+    if (!q) return;
+
+    setSearchHistory(prev => [q, ...prev.filter(item => item.toLowerCase() !== q.toLowerCase())].slice(0, 10));
+
+    if (isLoggedIn && currentUserId) {
+      await supabaseService.addSearchQuery(currentUserId, q);
+    }
   };
 
-  const addCard = (newCardData: Omit<UserCard, 'id'>) => {
+  const clearSearchHistory = async () => {
+    setSearchHistory([]);
+    if (isLoggedIn && currentUserId) {
+      await supabaseService.clearSearchHistory(currentUserId);
+    }
+  };
+
+  /**
+   * Cards Management (Benefits calculation - non sensitive)
+   */
+  const toggleCardActive = async (cardId: string) => {
+    const targetCard = userCards.find(c => c.id === cardId);
+    if (!targetCard) return;
+    const newActiveState = !targetCard.active;
+
+    setUserCards(prev => prev.map(c => c.id === cardId ? { ...c, active: newActiveState } : c));
+    showToast('Preferências de cartões atualizadas!', 'info');
+
+    if (isLoggedIn && currentUserId) {
+      await supabaseService.toggleUserCard(currentUserId, cardId, newActiveState);
+    }
+  };
+
+  const addCard = async (newCardData: Omit<UserCard, 'id'>) => {
+    const tempId = `card-${Date.now()}`;
     const newCard: UserCard = {
       ...newCardData,
-      id: `card-${Date.now()}`
+      id: tempId
     };
+
     setUserCards(prev => [newCard, ...prev]);
     showToast(`Cartão ${newCard.name} adicionado com sucesso!`, 'success');
+
+    if (isLoggedIn && currentUserId) {
+      const saved = await supabaseService.saveUserCard(currentUserId, {
+        cardIdentifier: tempId,
+        name: newCardData.name,
+        bank: newCardData.bank,
+        brand: newCardData.brand,
+        tier: newCardData.tier,
+        pointsPerUsd: newCardData.pointsPerUsd,
+        cashbackRate: newCardData.cashbackRate
+      });
+      if (saved) {
+        setUserCards(prev => prev.map(c => c.id === tempId ? { ...c, id: saved.id } : c));
+      }
+    }
   };
+
+  /**
+   * Favorites Operations with Supabase RLS isolation
+   */
+  const favoriteProductIds = favorites.map(f => f.productId);
 
   const isFavorite = (productId: string) => {
-    return favorites.some(f => f.productId === productId);
+    return favoriteProductIds.includes(productId);
   };
 
-  const toggleFavorite = (productId: string) => {
-    if (!isLoggedIn) {
+  const toggleFavorite = async (productId: string) => {
+    if (!isLoggedIn || !currentUserId) {
       setRedirectAfterLogin('favorites');
       showToast('Faça login para salvar produtos favoritos.', 'info');
       navigate('login');
       return;
     }
 
-    const exists = favorites.some(f => f.productId === productId);
+    const exists = isFavorite(productId);
+
     if (exists) {
+      // Remove favorite
       setFavorites(prev => prev.filter(f => f.productId !== productId));
       setUserProfile(prev => ({ ...prev, favoritesCount: Math.max(0, prev.favoritesCount - 1) }));
       showToast('Produto removido dos favoritos', 'info');
+
+      await supabaseService.removeFavorite(currentUserId, productId);
     } else {
+      // Add favorite
       const prod = MOCK_PRODUCTS.find(p => p.id === productId);
       if (prod) {
         const newFav: FavoriteItem = {
@@ -253,15 +471,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           priceChangePct: prod.priceChangePct,
           alertActive: false
         };
+
         setFavorites(prev => [newFav, ...prev]);
         setUserProfile(prev => ({ ...prev, favoritesCount: prev.favoritesCount + 1 }));
         showToast('Produto adicionado aos favoritos!', 'success');
+
+        const saved = await supabaseService.addFavorite(currentUserId, {
+          productId: prod.id,
+          productName: prod.name,
+          productImage: prod.image,
+          store: 'Melhor Oferta',
+          price: prod.basePrice,
+          productUrl: `/product/${prod.id}`
+        });
+
+        if (saved) {
+          setFavorites(prev => prev.map(f => f.productId === productId ? { ...f, id: saved.id } : f));
+        }
       }
     }
   };
 
-  const addAlert = (productId: string, targetPrice: number) => {
-    if (!isLoggedIn) {
+  /**
+   * Alerts Operations with Supabase RLS isolation
+   */
+  const addAlert = async (productId: string, targetPrice: number) => {
+    if (!isLoggedIn || !currentUserId) {
       setRedirectAfterLogin('alerts');
       showToast('Faça login para criar alertas de preço.', 'info');
       navigate('login');
@@ -269,8 +504,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     const prod = MOCK_PRODUCTS.find(p => p.id === productId) || MOCK_PRODUCTS[0];
+    const tempId = `alt-${Date.now()}`;
     const newAlert: PriceAlert = {
-      id: `alt-${Date.now()}`,
+      id: tempId,
       productId,
       product: prod,
       targetEffectivePrice: targetPrice,
@@ -282,9 +518,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       notifyEmail: true,
       notifyPush: true
     };
+
     setAlerts(prev => [newAlert, ...prev]);
     setUserProfile(prev => ({ ...prev, activeAlertsCount: prev.activeAlertsCount + 1 }));
     showToast(`Alerta ativado para ${prod.name} abaixo de R$ ${targetPrice.toLocaleString('pt-BR')}`, 'success');
+
+    const saved = await supabaseService.addAlert(currentUserId, {
+      productId: prod.id,
+      productName: prod.name,
+      productImage: prod.image,
+      targetPrice,
+      currentPrice: prod.basePrice,
+      currentEffectivePrice: Math.round(prod.basePrice * 0.94)
+    });
+
+    if (saved) {
+      setAlerts(prev => prev.map(a => a.id === tempId ? { ...a, id: saved.id } : a));
+    }
   };
 
   const toggleAlertActive = (alertId: string) => {
@@ -292,173 +542,239 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('Status do alerta atualizado', 'info');
   };
 
-  const deleteAlert = (alertId: string) => {
+  const deleteAlert = async (alertId: string) => {
     setAlerts(prev => prev.filter(a => a.id !== alertId));
     setUserProfile(prev => ({ ...prev, activeAlertsCount: Math.max(0, prev.activeAlertsCount - 1) }));
     showToast('Alerta removido', 'info');
-  };
 
-  /**
-   * Real authenticated login handler
-   */
-  const login = (
-    email: string, 
-    name?: string, 
-    avatar?: string, 
-    authProvider: 'google' | 'email' = 'email'
-  ) => {
-    const existing = getUserFromRegistry(email);
-    const resolvedName = name || existing?.name || (email.split('@')[0].replace('.', ' ') || 'Usuário');
-    const formattedName = resolvedName.charAt(0).toUpperCase() + resolvedName.slice(1);
-    
-    const authenticatedProfile: UserProfile = {
-      name: formattedName,
-      email: email.trim(),
-      avatar: avatar || existing?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(formattedName)}`,
-      authProvider,
-      joinedAt: existing?.createdAt || 'Hoje',
-      estimatedSavings: existing?.totalCashback || 142.50,
-      trackedOffersCount: 4,
-      activeAlertsCount: alerts.length,
-      favoritesCount: favorites.length,
-      totalCashbackBalance: existing?.totalCashback || 84.50,
-      totalPointsBalance: 12500,
-      totalMilesBalance: 32000,
-      selectedCardId: 'card-c6-carbon'
-    };
-
-    setIsLoggedIn(true);
-    setUserProfile(authenticatedProfile);
-    saveAuthSession(authenticatedProfile, authProvider);
-
-    showToast(`Bem-vindo(a) de volta, ${formattedName.split(' ')[0]}!`, 'success');
-    
-    if (redirectAfterLogin) {
-      const dest = redirectAfterLogin;
-      setRedirectAfterLogin(null);
-      navigate(dest);
-    } else {
-      navigate('dashboard');
+    if (isLoggedIn && currentUserId) {
+      await supabaseService.removeAlert(currentUserId, alertId);
     }
   };
 
-  /**
-   * Real user registration handler
-   */
-  const register = (name: string, email: string) => {
-    const trimmedName = name.trim();
-    const formattedName = trimmedName.charAt(0).toUpperCase() + trimmedName.slice(1);
-
-    const newProfile: UserProfile = {
-      name: formattedName || 'Novo Membro',
-      email: email.trim(),
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(formattedName)}`,
-      authProvider: 'email',
-      joinedAt: new Date().toLocaleDateString('pt-BR'),
-      estimatedSavings: 0,
-      trackedOffersCount: 0,
-      activeAlertsCount: 0,
-      favoritesCount: 0,
-      totalCashbackBalance: 0,
-      totalPointsBalance: 0,
-      totalMilesBalance: 0,
-      selectedCardId: 'card-c6-carbon'
-    };
-
-    setIsLoggedIn(true);
-    setUserProfile(newProfile);
-    saveAuthSession(newProfile, 'email');
-
-    showToast(`Conta criada com sucesso! Bem-vindo(a), ${formattedName.split(' ')[0]}!`, 'success');
-    
-    if (redirectAfterLogin) {
-      const dest = redirectAfterLogin;
-      setRedirectAfterLogin(null);
-      navigate(dest);
-    } else {
-      navigate('dashboard');
-    }
+  const removeAlert = (alertId: string) => {
+    deleteAlert(alertId);
   };
 
   /**
-   * Genuine Google OAuth 2.0 / GIS authentication
+   * Real Supabase Authentication: Email & Password Login
    */
-  const loginWithGoogle = async (): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+  const login = async (email: string, password?: string): Promise<{ success: boolean; error?: string }> => {
+    if (!email.trim() || !password) {
+      return { success: false, error: 'Informe e-mail e senha.' };
+    }
 
-      // 1. Check if Google Identity Services Client is available in browser
-      const google = (window as any).google;
-      if (googleClientId && google?.accounts?.oauth2) {
-        try {
-          const client = google.accounts.oauth2.initTokenClient({
-            client_id: googleClientId,
-            scope: 'email profile openid',
-            callback: async (response: any) => {
-              if (response && response.access_token) {
-                try {
-                  const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-                    headers: { Authorization: `Bearer ${response.access_token}` }
-                  });
-                  const profileData = await userInfoRes.json();
-                  
-                  if (profileData && profileData.email) {
-                    login(
-                      profileData.email,
-                      profileData.name || profileData.given_name || 'Usuário Google',
-                      profileData.picture,
-                      'google'
-                    );
-                    resolve();
-                    return;
-                  }
-                } catch (fetchErr) {
-                  console.error('Error fetching Google user profile:', fetchErr);
-                }
-              }
-              // If callback failed to get user info
-              reject(new Error('Google sign-in token failed'));
-            },
-            error_callback: (err: any) => {
-              console.error('Google OAuth error:', err);
-              reject(err);
-            }
-          });
-
-          client.requestAccessToken();
-          return;
-        } catch (initErr) {
-          console.warn('Could not initialize Google token client:', initErr);
-        }
+    try {
+      if (!isSupabaseConfigured) {
+        // Safe simulation if Supabase keys aren't configured yet
+        const metaName = email.split('@')[0].replace('.', ' ');
+        const formattedName = metaName.charAt(0).toUpperCase() + metaName.slice(1);
+        setIsLoggedIn(true);
+        setUserProfile({
+          name: formattedName,
+          email: email.trim(),
+          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(formattedName)}`,
+          authProvider: 'email',
+          joinedAt: new Date().toLocaleDateString('pt-BR'),
+          estimatedSavings: 0,
+          trackedOffersCount: 0,
+          activeAlertsCount: 0,
+          favoritesCount: 0,
+          totalCashbackBalance: 0,
+          totalPointsBalance: 0,
+          totalMilesBalance: 0
+        });
+        showToast(`Bem-vindo(a) ao FindOfertas, ${formattedName}!`, 'success');
+        navigate(redirectAfterLogin || 'dashboard');
+        setRedirectAfterLogin(null);
+        return { success: true };
       }
 
-      // 2. Fallback Google sign-in modal/flow for development / preview environments without Google Client ID
-      setTimeout(() => {
-        // Use prompt or authenticated profile creation
-        const defaultGoogleUser = {
-          name: 'Usuário Google',
-          email: 'usuario.google@gmail.com',
-          avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
-          authProvider: 'google' as const
-        };
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password
+      });
 
-        login(defaultGoogleUser.email, defaultGoogleUser.name, defaultGoogleUser.avatar, 'google');
-        resolve();
-      }, 700);
-    });
+      if (error) {
+        let msg = 'E-mail ou senha inválidos.';
+        if (error.message.includes('Invalid login credentials')) {
+          msg = 'E-mail ou senha incorretos. Verifique suas credenciais.';
+        } else if (error.message.includes('Email not confirmed')) {
+          msg = 'E-mail não confirmado. Verifique sua caixa de entrada.';
+        }
+        return { success: false, error: msg };
+      }
+
+      if (data.user) {
+        await loadUserData(data.user);
+        showToast('Login realizado com sucesso!', 'success');
+        navigate(redirectAfterLogin || 'dashboard');
+        setRedirectAfterLogin(null);
+        return { success: true };
+      }
+
+      return { success: false, error: 'Não foi possível autenticar.' };
+    } catch (e: any) {
+      return { success: false, error: e.message || 'Erro inesperado no login.' };
+    }
   };
 
   /**
-   * Secure Logout
+   * Real Supabase Authentication: Register New User
    */
-  const logout = () => {
-    clearAuthSession();
-    setIsLoggedIn(false);
-    setUserProfile(GUEST_USER_PROFILE);
-    setRedirectAfterLogin(null);
-    showToast('Você saiu da sua conta com segurança.', 'info');
-    setCurrentPage('login');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const register = async (name: string, email: string, password?: string): Promise<{ success: boolean; error?: string }> => {
+    if (!name.trim() || !email.trim() || !password) {
+      return { success: false, error: 'Preencha todos os campos obrigatórios.' };
+    }
+
+    try {
+      if (!isSupabaseConfigured) {
+        const formattedName = name.trim();
+        setIsLoggedIn(true);
+        setUserProfile({
+          name: formattedName,
+          email: email.trim(),
+          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(formattedName)}`,
+          authProvider: 'email',
+          joinedAt: new Date().toLocaleDateString('pt-BR'),
+          estimatedSavings: 0,
+          trackedOffersCount: 0,
+          activeAlertsCount: 0,
+          favoritesCount: 0,
+          totalCashbackBalance: 0,
+          totalPointsBalance: 0,
+          totalMilesBalance: 0
+        });
+        showToast(`Conta criada com sucesso! Bem-vindo(a), ${formattedName}!`, 'success');
+        navigate(redirectAfterLogin || 'dashboard');
+        setRedirectAfterLogin(null);
+        return { success: true };
+      }
+
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          data: {
+            full_name: name.trim(),
+            name: name.trim(),
+            avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name.trim())}`
+          }
+        }
+      });
+
+      if (error) {
+        let msg = 'Erro ao criar conta.';
+        if (error.message.includes('User already registered')) {
+          msg = 'Este e-mail já está cadastrado. Faça login.';
+        } else if (error.message.includes('Password should be at least')) {
+          msg = 'A senha deve ter no mínimo 6 caracteres.';
+        }
+        return { success: false, error: msg };
+      }
+
+      if (data.user) {
+        await loadUserData(data.user);
+        showToast('Conta criada com sucesso! Bem-vindo(a) ao FindOfertas!', 'success');
+        navigate(redirectAfterLogin || 'dashboard');
+        setRedirectAfterLogin(null);
+        return { success: true };
+      }
+
+      return { success: true };
+    } catch (e: any) {
+      return { success: false, error: e.message || 'Erro inesperado no cadastro.' };
+    }
+  };
+
+  /**
+   * Real Supabase Authentication: Google OAuth Sign-in
+   */
+  const loginWithGoogle = async (): Promise<void> => {
+    if (!isSupabaseConfigured) {
+      // Fallback in preview if env vars not provided
+      const googleUser = {
+        name: 'Usuário Google',
+        email: 'usuario.google@gmail.com',
+        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+        authProvider: 'google' as const
+      };
+      setIsLoggedIn(true);
+      setUserProfile({
+        name: googleUser.name,
+        email: googleUser.email,
+        avatar: googleUser.avatar,
+        authProvider: 'google',
+        joinedAt: new Date().toLocaleDateString('pt-BR'),
+        estimatedSavings: 0,
+        trackedOffersCount: 0,
+        activeAlertsCount: 0,
+        favoritesCount: 0,
+        totalCashbackBalance: 0,
+        totalPointsBalance: 0,
+        totalMilesBalance: 0
+      });
+      showToast('Conectado com o Google!', 'success');
+      navigate(redirectAfterLogin || 'dashboard');
+      setRedirectAfterLogin(null);
+      return;
+    }
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin
+      }
+    });
+
+    if (error) {
+      console.error('Supabase Google OAuth error:', error);
+      throw new Error(error.message);
+    }
+  };
+
+  /**
+   * Password Reset
+   */
+  const resetPassword = async (email: string): Promise<{ success: boolean; error?: string }> => {
+    if (!email.trim()) {
+      return { success: false, error: 'Informe um endereço de e-mail válido.' };
+    }
+
+    if (!isSupabaseConfigured) {
+      return { success: true };
+    }
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/login`
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+      return { success: true };
+    } catch (e: any) {
+      return { success: false, error: e.message || 'Erro ao solicitar recuperação.' };
+    }
+  };
+
+  /**
+   * Real Supabase Logout
+   */
+  const logout = async () => {
+    try {
+      if (isSupabaseConfigured) {
+        await supabase.auth.signOut();
+      }
+    } catch (e) {
+      console.warn('Error signing out from Supabase:', e);
+    } finally {
+      resetToCleanGuest();
+      showToast('Você saiu da sua conta com segurança.', 'info');
+      setCurrentPage('login');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const requireAuth = (targetPage: PageRoute, callback?: () => void): boolean => {
@@ -505,6 +821,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         navigate,
         searchQuery,
         setSearchQuery,
+        searchHistory,
+        recordSearch,
+        clearSearchHistory,
         selectedProductId,
         setSelectedProductId,
         activeProduct,
@@ -513,12 +832,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addCard,
         userPrograms,
         favorites,
+        favoriteProductIds,
         toggleFavorite,
         isFavorite,
         alerts,
+        userAlerts: alerts,
         addAlert,
         toggleAlertActive,
         deleteAlert,
+        removeAlert,
         userProfile,
         setUserProfile,
         isLoggedIn,
@@ -526,6 +848,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         login,
         register,
         loginWithGoogle,
+        resetPassword,
         logout,
         redirectAfterLogin,
         setRedirectAfterLogin,
@@ -559,4 +882,3 @@ export const useApp = () => {
   }
   return context;
 };
-

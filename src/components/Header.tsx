@@ -114,13 +114,12 @@ export const Header: React.FC = () => {
             {isLoggedIn ? (
               <>
                 <div 
-                  onClick={() => navigate('wallet')} 
+                  onClick={() => navigate('dashboard')} 
                   className="text-right cursor-pointer hidden sm:block select-none"
                 >
-                  <div className="text-xs text-slate-500">Olá, {userProfile.name.split(' ')[0]}</div>
-                  <div className="text-sm font-bold text-slate-900 leading-tight">
-                    {formatCurrency(userProfile.totalCashbackBalance)}{' '}
-                    <span className="text-[10px] font-normal uppercase text-emerald-600 tracking-wider">Cashback</span>
+                  <div className="text-xs text-slate-500 font-medium">Olá, {userProfile.name.split(' ')[0]}</div>
+                  <div className="text-xs font-bold text-blue-600 leading-tight">
+                    Minha Conta
                   </div>
                 </div>
 

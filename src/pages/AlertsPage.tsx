@@ -45,49 +45,56 @@ export const AlertsPage: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-3">
-          {userAlerts.map((alert) => (
-            <div
-              key={alert.id}
-              className="bg-white border border-slate-200 rounded-2xl p-5 hover:border-slate-300 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm"
-            >
-              <div className="flex items-center gap-4 flex-1">
-                <img
-                  src={alert.productImage}
-                  alt={alert.productName}
-                  className="w-16 h-16 object-contain rounded-xl bg-slate-50 p-1 border border-slate-100 flex-shrink-0"
-                />
-                <div className="space-y-1">
-                  <h3 
-                    onClick={() => navigate('product', alert.productId)}
-                    className="text-sm font-bold text-slate-900 hover:text-blue-600 cursor-pointer"
-                  >
-                    {alert.productName}
-                  </h3>
-                  <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
-                    <span>Preço atual: <strong>{formatCurrency(alert.currentEffectivePrice)}</strong></span>
-                    <span>•</span>
-                    <span className="text-blue-600 font-bold">
-                      Meta: <strong>{formatCurrency(alert.targetPrice)}</strong>
-                    </span>
+          {userAlerts.map((alert) => {
+            const prodImg = alert.product?.image || (alert as any).productImage || 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=300&auto=format&fit=crop&q=80';
+            const prodName = alert.product?.name || (alert as any).productName || 'Produto';
+            const targetVal = alert.targetEffectivePrice || (alert as any).targetPrice || 0;
+            const currentVal = alert.currentEffectivePrice || alert.currentPrice || 0;
+
+            return (
+              <div
+                key={alert.id}
+                className="bg-white border border-slate-200 rounded-2xl p-5 hover:border-slate-300 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm"
+              >
+                <div className="flex items-center gap-4 flex-1">
+                  <img
+                    src={prodImg}
+                    alt={prodName}
+                    className="w-16 h-16 object-contain rounded-xl bg-slate-50 p-1 border border-slate-100 flex-shrink-0"
+                  />
+                  <div className="space-y-1">
+                    <h3 
+                      onClick={() => navigate('product', alert.productId)}
+                      className="text-sm font-bold text-slate-900 hover:text-blue-600 cursor-pointer"
+                    >
+                      {prodName}
+                    </h3>
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                      <span>Preço atual: <strong>{formatCurrency(currentVal)}</strong></span>
+                      <span>•</span>
+                      <span className="text-blue-600 font-bold">
+                        Meta: <strong>{formatCurrency(targetVal)}</strong>
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="w-full sm:w-auto flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-100">
-                <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
-                  <CheckCircle2 className="w-3.5 h-3.5" /> Monitorando
-                </span>
+                <div className="w-full sm:w-auto flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-100">
+                  <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Monitorando
+                  </span>
 
-                <button
-                  onClick={() => removeAlert(alert.id)}
-                  className="p-2 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 transition-colors"
-                  title="Excluir alerta"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                  <button
+                    onClick={() => removeAlert(alert.id)}
+                    className="p-2 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
+                    title="Excluir alerta"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

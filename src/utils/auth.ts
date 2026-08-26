@@ -1,5 +1,5 @@
 import { UserProfile } from '../types';
-import { GUEST_USER_PROFILE, INITIAL_USER_PROFILE } from '../data/mockWallet';
+import { GUEST_USER_PROFILE } from '../data/mockWallet';
 
 const AUTH_SESSION_KEY = 'findofertas_session_v1';
 const AUTH_USERS_KEY = 'findofertas_registered_users_v1';
@@ -24,31 +24,11 @@ export interface StoredUserAccount {
 }
 
 /**
- * Checks whether the environment explicitly requested Demo Mode.
- * By default in production/preview, this is false.
- */
-export function isDemoModeActive(): boolean {
-  try {
-    return import.meta.env.VITE_DEMO_MODE === 'true';
-  } catch {
-    return false;
-  }
-}
-
-/**
  * Validates the current stored session.
  * Returns the authenticated UserProfile if valid, or null if no valid session exists.
- * Does NOT fallback to demo user unless VITE_DEMO_MODE=true is explicitly configured.
+ * Does NOT fallback to demo user.
  */
 export function getValidatedSession(): { user: UserProfile; token: string } | null {
-  // If demo mode is explicitly enabled by environment variable
-  if (isDemoModeActive()) {
-    return {
-      token: 'demo-session-token',
-      user: INITIAL_USER_PROFILE
-    };
-  }
-
   try {
     const raw = localStorage.getItem(AUTH_SESSION_KEY);
     if (!raw) {

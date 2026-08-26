@@ -43,15 +43,12 @@ export const LoginPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Simulate quick secure auth roundtrip
-      await new Promise(r => setTimeout(r, 450));
-      
-      const userName = email.split('@')[0].replace('.', ' ');
-      const formattedName = userName.charAt(0).toUpperCase() + userName.slice(1);
-      
-      login(email, formattedName || 'Usuário FindOfertas', undefined, 'email');
-    } catch (err) {
-      setErrorMessage('Falha ao autenticar. Verifique suas credenciais.');
+      const res = await login(email, password);
+      if (!res.success) {
+        setErrorMessage(res.error || 'Falha ao autenticar. Verifique suas credenciais.');
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Falha ao autenticar. Verifique suas credenciais.');
     } finally {
       setIsLoading(false);
     }
@@ -288,10 +285,12 @@ export const RegisterPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      await new Promise(r => setTimeout(r, 450));
-      register(name, email);
-    } catch (err) {
-      setErrorMessage('Erro ao criar conta. Tente novamente.');
+      const res = await register(name, email, password);
+      if (!res.success) {
+        setErrorMessage(res.error || 'Erro ao criar conta. Tente novamente.');
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Erro ao criar conta. Tente novamente.');
     } finally {
       setIsLoading(false);
     }
@@ -489,7 +488,7 @@ export const RegisterPage: React.FC = () => {
 };
 
 export const ForgotPasswordPage: React.FC = () => {
-  const { navigate, showToast } = useApp();
+  const { navigate, showToast, resetPassword } = useApp();
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -505,22 +504,26 @@ export const ForgotPasswordPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      await new Promise(r => setTimeout(r, 600));
-      setIsSubmitted(true);
-      setResendCooldown(60);
-      showToast('Instruções de recuperação enviadas para o seu e-mail!', 'success');
-      
-      const interval = setInterval(() => {
-        setResendCooldown(prev => {
-          if (prev <= 1) {
-            clearInterval(interval);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    } catch (err) {
-      showToast('Ocorreu um erro ao solicitar a recuperação.', 'error');
+      const res = await resetPassword(email);
+      if (res.success) {
+        setIsSubmitted(true);
+        setResendCooldown(60);
+        showToast('Instruções de recuperação enviadas para o seu e-mail!', 'success');
+        
+        const interval = setInterval(() => {
+          setResendCooldown(prev => {
+            if (prev <= 1) {
+              clearInterval(interval);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+      } else {
+        showToast(res.error || 'Ocorreu um erro ao solicitar a recuperação.', 'error');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Ocorreu um erro ao solicitar a recuperação.', 'error');
     } finally {
       setIsLoading(false);
     }

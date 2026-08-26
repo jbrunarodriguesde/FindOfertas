@@ -13,21 +13,7 @@ export const GUEST_USER_PROFILE: UserProfile = {
   totalMilesBalance: 0
 };
 
-export const INITIAL_USER_PROFILE: UserProfile = {
-  name: 'Bruna',
-  email: 'brunarj51@gmail.com',
-  avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-  estimatedSavings: 342.50,
-  trackedOffersCount: 12,
-  activeAlertsCount: 4,
-  favoritesCount: 8,
-  totalCashbackBalance: 342.50,
-  totalPointsBalance: 45200,
-  totalMilesBalance: 120000,
-  selectedCardId: 'card-c6-carbon'
-};
-
-export const MOCK_USER_CARDS: UserCard[] = [
+export const DEFAULT_USER_CARDS: UserCard[] = [
   {
     id: 'card-c6-carbon',
     name: 'C6 Carbon Mastercard Black',
